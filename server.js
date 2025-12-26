@@ -36,7 +36,7 @@ dotenv.config();
 
 // Tokenizer service auto-start (local only)
 const TOKENIZER_HOST = process.env.TOKENIZER_HOST || 'project.3bbddns.com';
-const TOKENIZER_PORT = process.env.TOKENIZER_PORT || '8000';
+const TOKENIZER_PORT = process.env.TOKENIZER_PORT || '36146';
 const TOKENIZER_PATH = process.env.TOKENIZER_PATH || '/tokenize';
 const TOKENIZER_URL = process.env.TOKENIZER_URL || `http://${TOKENIZER_HOST}:${TOKENIZER_PORT}${TOKENIZER_PATH}`;
 const AUTO_START_TOKENIZER = process.env.AUTO_START_TOKENIZER !== 'false';
@@ -51,7 +51,7 @@ async function startTokenizerService() {
   try {
     const parsed = new URL(TOKENIZER_URL);
     const host = parsed.hostname;
-    const port = parsed.port || TOKENIZER_PORT || '8000';
+    const port = parsed.port || TOKENIZER_PORT || '36146';
 
     // Only auto-start when pointing to local host
     if (host !== '127.0.0.1' && host !== 'project.3bbddns.com') {
@@ -307,6 +307,27 @@ app.use(express.text({ type: ['text/csv', 'text/plain'], limit: '10mb' }));
 // Serve frontend helper scripts (helpers will define bindSidebarResize / unbindSidebarResize)
 app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
 
+// Serve frontend static files (if a built frontend exists)
+const FRONTEND_DIR = process.env.FRONTEND_STATIC_DIR || path.join(__dirname, '..', 'PCRU-CHATBOT-FRONTEND-1', 'dist');
+if (fs.existsSync(FRONTEND_DIR)) {
+  console.log(`📦 Serving frontend static files from ${FRONTEND_DIR}`);
+  app.use(express.static(FRONTEND_DIR));
+
+  // Prefer explicit API/static routes above; fallback to SPA index for unknown GETs
+  // Use a generic middleware instead of a path pattern to avoid path-to-regexp issues
+  app.use((req, res, next) => {
+    if (req.method !== 'GET') return next();
+    const skipPrefixes = ['/api', '/uploads', '/js', '/ranking', '/system'];
+    for (const p of skipPrefixes) {
+      if (req.path.startsWith(p)) return next();
+    }
+    const indexPath = path.join(FRONTEND_DIR, 'index.html');
+    if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
+    return next();
+  });
+} else {
+  console.log(`ℹ️ Frontend static directory not found at ${FRONTEND_DIR}; skipping SPA fallback.`);
+}
 // 5. สร้าง Route 
 app.get('/', (req, res) => {
   res.send('PCRU Chatbot Backend running');
