@@ -35,7 +35,7 @@ const fs = require('fs');
 dotenv.config();
 
 // Tokenizer service auto-start (local only)
-const TOKENIZER_HOST = process.env.TOKENIZER_HOST || 'localhost';
+const TOKENIZER_HOST = process.env.TOKENIZER_HOST || 'project.3bbddns.com';
 const TOKENIZER_PORT = process.env.TOKENIZER_PORT || '8000';
 const TOKENIZER_PATH = process.env.TOKENIZER_PATH || '/tokenize';
 const TOKENIZER_URL = process.env.TOKENIZER_URL || `http://${TOKENIZER_HOST}:${TOKENIZER_PORT}${TOKENIZER_PATH}`;
@@ -54,7 +54,7 @@ async function startTokenizerService() {
     const port = parsed.port || TOKENIZER_PORT || '8000';
 
     // Only auto-start when pointing to local host
-    if (host !== '127.0.0.1' && host !== 'localhost') {
+    if (host !== '127.0.0.1' && host !== 'project.3bbddns.com') {
       console.log(`ℹ️ Skipping tokenizer auto-start (TOKENIZER_URL points to ${host})`);
       return;
     }
@@ -283,7 +283,7 @@ app.locals.pool = pool;
 
 // 4. กำหนด Middleware 
 // Explicit CORS for frontend dev origins to avoid Safari access-control blocks
-const defaultFrontendOrigin = (() => { try { return new URL(process.env.CLIENT_URL || 'http://localhost:5173').origin; } catch (e) { return 'http://localhost:5173'; } })();
+const defaultFrontendOrigin = (() => { try { return new URL(process.env.CLIENT_URL || 'http://project.3bbddns.com:5173').origin; } catch (e) { return 'http://project.3bbddns.com:5173'; } })();
 const allowedOrigins = [
   defaultFrontendOrigin,
   process.env.FRONTEND_ORIGIN || ''
@@ -638,7 +638,7 @@ app.get('/categories/last-upload', authenticateToken, downloadCategoriesLastUplo
 app.get('/questionsanswers/last-upload', authenticateToken, downloadQuestionsAnswersLastUploadService());
 
 // 7. เปิด Server
-const HOST = process.env.HOST || 'localhost';
+const HOST = process.env.HOST || 'project.3bbddns.com';
 server.listen(PORT, HOST, async () => {
   // List non-internal IPv4 addresses for convenience when binding to 0.0.0.0
   const os = require('os');

@@ -1,7 +1,7 @@
 const mysql=require('mysql2/promise');
 require('dotenv').config();
 (async()=>{
-  const conn=await mysql.createConnection({host:process.env.DB_HOST||'localhost',user:process.env.DB_USER||'root',password:process.env.DB_PASSWORD||'',database:process.env.DB_NAME||'pcru_auto_response'});
+  const conn=await mysql.createConnection({host:process.env.DB_HOST||'project.3bbddns.com',user:process.env.DB_USER||'root',password:process.env.DB_PASSWORD||'',database:process.env.DB_NAME||'pcru_auto_response'});
   try{
     await conn.query(`ALTER TABLE Feedbacks ADD COLUMN IF NOT EXISTS Timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER FeedbackValue, ADD COLUMN IF NOT EXISTS FeedbackReason VARCHAR(100) NULL AFTER FeedbackValue, ADD COLUMN IF NOT EXISTS FeedbackComment TEXT NULL AFTER FeedbackReason, ADD COLUMN IF NOT EXISTS HandledAt DATETIME NULL DEFAULT NULL AFTER FeedbackComment`);
     console.log('Added columns (if not existed)');

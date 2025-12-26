@@ -2,7 +2,7 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost
+-- Host: project.3bbddns.com
 -- Generation Time: Dec 22, 2025 at 03:17 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4

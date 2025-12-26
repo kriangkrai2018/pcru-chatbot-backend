@@ -283,7 +283,7 @@ function semanticOverlapScore(queryTokens, targetTokens) {
 const KW_SIM_THRESHOLD = parseFloat(process.env.KW_SIM_THRESHOLD) || 0.5; // was 0.7
 
 // Optional PyThaiNLP tokenizer microservice (FastAPI)
-const TOKENIZER_HOST = process.env.TOKENIZER_HOST || 'localhost';
+const TOKENIZER_HOST = process.env.TOKENIZER_HOST || 'project.3bbddns.com';
 const TOKENIZER_PORT = process.env.TOKENIZER_PORT || '8000';
 const TOKENIZER_PATH = process.env.TOKENIZER_PATH || '/tokenize';
 const TOKENIZER_URL = process.env.TOKENIZER_URL || `http://${TOKENIZER_HOST}:${TOKENIZER_PORT}${TOKENIZER_PATH}`;

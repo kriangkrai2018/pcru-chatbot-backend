@@ -51,7 +51,7 @@ function postJSON(url, payload) {
   const results = [];
   for (const q of QUERIES) {
     try {
-      const resp = await postJSON('http://localhost:3000/chat/respond', { message: q.q });
+      const resp = await postJSON('http://project.3bbddns.com:3000/chat/respond', { message: q.q });
       const alts = resp.alternatives || [];
       const top = alts[0] || {};
       const okTitle = q.expectTitleIncludes ? (String(top.title || '').includes(q.expectTitleIncludes)) : true;

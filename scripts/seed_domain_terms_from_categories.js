@@ -134,7 +134,7 @@ const isKeywordAppropriateForDomain = (keyword, domain) => {
 
 async function main() {
   const pool = mysql.createPool({
-    host: config.db?.host || process.env.DB_HOST || 'localhost',
+    host: config.db?.host || process.env.DB_HOST || 'project.3bbddns.com',
     user: config.db?.user || process.env.DB_USER,
     password: config.db?.password || process.env.DB_PASSWORD,
     database: config.db?.database || process.env.DB_NAME,

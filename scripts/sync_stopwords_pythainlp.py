@@ -38,7 +38,7 @@ def connect_to_database():
     """Connect to MySQL database"""
     try:
         connection = mysql.connector.connect(
-            host=os.getenv('DB_HOST', 'localhost'),
+            host=os.getenv('DB_HOST', 'project.3bbddns.com'),
             user=os.getenv('DB_USER', 'root'),
             password=os.getenv('DB_PASSWORD', ''),
             database=os.getenv('DB_NAME', 'pcru_chatbot'),

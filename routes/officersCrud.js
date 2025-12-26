@@ -147,7 +147,7 @@ router.post('/create', async (req, res) => {
         (async () => {
           try {
             const mysql = require('mysql2/promise');
-            const tmpPool = await mysql.createPool({ host: process.env.DB_HOST || 'localhost', user: process.env.DB_USER || 'root', database: process.env.DB_NAME || 'pcru_auto_response', waitForConnections: true, connectionLimit: 2 });
+            const tmpPool = await mysql.createPool({ host: process.env.DB_HOST || 'project.3bbddns.com', user: process.env.DB_USER || 'root', database: process.env.DB_NAME || 'pcru_auto_response', waitForConnections: true, connectionLimit: 2 });
             await writeOfficersCSV(tmpPool, targetId)();
             await tmpPool.end();
             console.log('✅ background writeOfficersCSV after create succeeded');
@@ -161,7 +161,7 @@ router.post('/create', async (req, res) => {
       // Attempt a retry with a fresh pool in case the app pool was temporarily unavailable
       try {
         const mysql = require('mysql2/promise');
-        const tmpPool = await mysql.createPool({ host: process.env.DB_HOST || 'localhost', user: process.env.DB_USER || 'root', database: process.env.DB_NAME || 'pcru_auto_response', waitForConnections: true, connectionLimit: 2 });
+        const tmpPool = await mysql.createPool({ host: process.env.DB_HOST || 'project.3bbddns.com', user: process.env.DB_USER || 'root', database: process.env.DB_NAME || 'pcru_auto_response', waitForConnections: true, connectionLimit: 2 });
         const { latestPath: retryPath } = await writeOfficersCSV(tmpPool, targetId)();
         console.log(`✅ writeOfficersCSV retry after create succeeded: ${retryPath}`);
         await tmpPool.end();

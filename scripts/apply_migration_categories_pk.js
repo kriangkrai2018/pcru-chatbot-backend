@@ -6,7 +6,7 @@ async function runSqlFile(filePath) {
   const sql = fs.readFileSync(filePath, 'utf8');
   const statements = sql.split(/;\s*\n/).map(s => s.trim()).filter(Boolean);
   const conn = await mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || 'project.3bbddns.com',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'pcru_auto_response',

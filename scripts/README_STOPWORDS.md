@@ -26,7 +26,7 @@ python scripts/sync_stopwords_pythainlp.py
 Make sure your `.env` file has:
 
 ```env
-DB_HOST=localhost
+DB_HOST=project.3bbddns.com
 DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=pcru_chatbot
