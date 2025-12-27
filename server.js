@@ -317,10 +317,15 @@ if (fs.existsSync(FRONTEND_DIR)) {
   // Use a generic middleware instead of a path pattern to avoid path-to-regexp issues
   app.use((req, res, next) => {
     if (req.method !== 'GET') return next();
-    const skipPrefixes = ['/api', '/uploads', '/js', '/ranking', '/system', '/categories', '/getcategories', '/chat', '/login', '/forgotpassword', '/setnewpassword', '/validateresettoken', '/questionsanswers', '/getQuestionsAnswers', '/stopwords', '/synonyms', '/negativekeywords', '/adminusers', '/admin', '/officers', '/organizations', '/ai-image', '/health', '/keywords', '/getChatLogHasAnswers', '/feedbacks'];
+    const skipPrefixes = ['/api', '/uploads', '/js', '/ranking', '/system', '/categories', '/getcategories', '/chat', '/login', '/forgotpassword', '/setnewpassword', '/validateresettoken', '/questionsanswers', '/getQuestionsAnswers', '/stopwords', '/synonyms', '/negativekeywords', '/adminusers', '/admin', '/officers', '/organizations', '/ai-image', '/health', '/keywords', '/getChatLogHasAnswers', '/feedbacks', '/debug', '/debug/feedbacks'];
+    // Debug: log the requested path and whether it will be skipped
     for (const p of skipPrefixes) {
-      if (req.path.startsWith(p)) return next();
+      if (req.path.startsWith(p)) {
+        console.log(`[spa-fallback] Skipping SPA fallback for path: ${req.path} (matched prefix: ${p})`);
+        return next();
+      }
     }
+    console.log(`[spa-fallback] Serving index.html for path: ${req.path}`);
     const indexPath = path.join(FRONTEND_DIR, 'index.html');
     if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
     return next();
@@ -509,6 +514,17 @@ app.get('/getAnswersKeywords', authenticateToken, getAnswersKeywordsService(pool
 app.get('/getQuestionsAnswers', authenticateToken, getQuestionsAnswersService(pool));
 app.get('/getChatLogHasAnswers', authenticateToken, getChatLogHasAnswersService(pool));
 app.get('/getChatLogNoAnswers', authenticateToken, getChatLogNoAnswersService(pool));
+
+// Temporary debug endpoint (no auth) to return all feedbacks for UI debugging only
+// NOTE: This is for local debugging. Remove or secure in production.
+app.get('/debug/feedbacks', async (req, res) => {
+  try {
+    await getFeedbacksService(pool)(req, res);
+  } catch (err) {
+    console.error('[debug] /debug/feedbacks error:', err);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
 
 // --- Stopwords Management ---
 // Public list endpoint for viewing in UI without auth
