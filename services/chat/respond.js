@@ -171,34 +171,53 @@ function resolveSynonyms(tokens) {
 }
 
 async function normalize(text, pool) {
+  try {
   const t = String(text || '').toLowerCase().trim();
   const cleaned = t.replace(/[\p{P}\p{S}]/gu, ' ');
   const stopwords = await getStopwordsSet(pool);
   const shortStopwords = Array.from(stopwords).filter((sw) => sw && sw.length <= 4);
+  // Sort stopwords by length descending to match longest possible stopword first (e.g., "อยากรู้" before "รู้")
+  const sortedStopwords = Array.from(stopwords).sort((a, b) => b.length - a.length);
 
   const refineTokens = (tokens) => {
     const result = [];
-    for (const raw of tokens) {
-      let tok = String(raw || '').trim();
-      if (!tok) continue;
-      if (stopwords.has(tok)) continue; // exact match removal
+    const queue = [...tokens]; // Use a queue to process tokens and their sub-parts
+    const seen = new Set(); // Avoid infinite loops on weird splits
+    let loopCount = 0;
 
-      let splitPerformed = false;
-      for (const sw of shortStopwords) {
-        if (!sw) continue;
-        if (tok.includes(sw) && tok !== sw) {
-          const parts = tok.split(sw).map((p) => p.trim()).filter(Boolean);
-          if (parts.length > 0) {
-            result.push(...parts);
-          }
-          splitPerformed = true;
-          break; // avoid over-splitting on multiple short stopwords
+    while (queue.length > 0) {
+        if (loopCount++ > 1000) {
+            console.warn('⚠️ refineTokens loop limit exceeded');
+            break;
         }
-      }
+        const tok = queue.shift().trim();
+        if (!tok || seen.has(tok)) continue;
+        seen.add(tok);
 
-      if (!splitPerformed) {
-        result.push(tok);
-      }
+        // Check if the token itself is a stopword
+        if (stopwords.has(tok)) {
+            continue;
+        }
+
+        let splitPerformed = false;
+        for (const sw of sortedStopwords) {
+            if (!sw) continue;
+            // Check if the token contains a short stopword but is not the stopword itself
+            if (tok.includes(sw) && tok !== sw) {
+                const parts = tok.split(sw).map((p) => p.trim()).filter(Boolean);
+                if (parts.length > 0) {
+                    // Add the new parts to the front of the queue to be processed again
+                    queue.unshift(...parts);
+                }
+                splitPerformed = true;
+                break; // Process one split at a time
+            }
+        }
+
+        // If no split was performed, the token is considered final
+        if (!splitPerformed) {
+            result.push(tok);
+        }
     }
     return result;
   };
@@ -238,6 +257,10 @@ async function normalize(text, pool) {
 
   const refined = refineTokens(tokens);
   return resolveSynonyms(refined); // 🆕 Resolve synonyms
+  } catch (err) {
+    console.error('❌ Normalize error:', err);
+    return [String(text || '').trim()];
+  }
 }
 
 function jaccardSimilarity(aTokens, bTokens) {
@@ -1048,50 +1071,51 @@ module.exports = (pool) => async (req, res) => {
         console.log(`📊 Total QA items in database: ${qaList.length}`);
         
         // Semantic-aware keyword matching with scoring
-        keywordMatchesWithScore = await Promise.all(qaList.map(async item => {
+        // ⚡ Optimized: Use synchronous map and simpleTokenize to avoid HTTP storm from normalize()
+        keywordMatchesWithScore = qaList.map(item => {
           let maxSimilarity = 0;
           let matchCount = 0;
-        let allTokensMatched = true;
-        let keywordInTitleCount = 0; // 🆕 Count matching keywords in title
-        let exactKeywordInTitleCount = 0; // 🆕 Count exact keyword matches in title tokens
-        
-        // Tokenize title once for efficient reuse
-        const titleTokens = await normalize(item.QuestionTitle || '', pool);
-        
-        queryTokens.forEach(qToken => {
-          let foundMatch = false;
-          (item.keywords || []).forEach(kw => {
-            const kwLower = kw.toLowerCase();
-            const similarity = getSemanticSimilarity(qToken, kwLower);
-            if (similarity >= KW_SIM_THRESHOLD) {
-              foundMatch = true;
-              maxSimilarity = Math.max(maxSimilarity, similarity);
-              matchCount++;
-              // 🆕 Boost score if this keyword appears in title
-              const titleLower = String(item.QuestionTitle || '').toLowerCase();
-              if (titleLower.includes(kwLower)) {
-                keywordInTitleCount++;
-                // 🆕 EXTRA BOOST: if keyword appears as exact token in normalized title
-                // e.g., "เอกสาร" as a word in "ต้องใช้เอกสารอะไร"
-                if (titleTokens.includes(kwLower)) {
-                  exactKeywordInTitleCount++;
+          let allTokensMatched = true;
+          let keywordInTitleCount = 0; // 🆕 Count matching keywords in title
+          let exactKeywordInTitleCount = 0; // 🆕 Count exact keyword matches in title tokens
+          
+          // Tokenize title once for efficient reuse (synchronous)
+          const titleTokens = simpleTokenize(item.QuestionTitle || '');
+          
+          queryTokens.forEach(qToken => {
+            let foundMatch = false;
+            (item.keywords || []).forEach(kw => {
+              const kwLower = kw.toLowerCase();
+              const similarity = getSemanticSimilarity(qToken, kwLower);
+              if (similarity >= KW_SIM_THRESHOLD) {
+                foundMatch = true;
+                maxSimilarity = Math.max(maxSimilarity, similarity);
+                matchCount++;
+                // 🆕 Boost score if this keyword appears in title
+                const titleLower = String(item.QuestionTitle || '').toLowerCase();
+                if (titleLower.includes(kwLower)) {
+                  keywordInTitleCount++;
+                  // 🆕 EXTRA BOOST: if keyword appears as exact token in normalized title
+                  // e.g., "เอกสาร" as a word in "ต้องใช้เอกสารอะไร"
+                  if (titleTokens.includes(kwLower)) {
+                    exactKeywordInTitleCount++;
+                  }
                 }
               }
-            }
+            });
+            if (!foundMatch) allTokensMatched = false;
           });
-          if (!foundMatch) allTokensMatched = false;
-        });
-        
-        // 🆕 Also calculate title match score for better ranking
-        const titleMatchCount = queryTokens.filter(qToken => 
-          titleTokens.some(tToken => {
-            const sim = getSemanticSimilarity(qToken, tToken);
-            return sim >= KW_SIM_THRESHOLD;
-          })
-        ).length;
-        
-        return { item, maxSimilarity, matchCount, allTokensMatched, titleMatchCount, keywordInTitleCount, exactKeywordInTitleCount };
-        })).then(matches => matches.filter(m => m.matchCount > 0));
+          
+          // 🆕 Also calculate title match score for better ranking
+          const titleMatchCount = queryTokens.filter(qToken => 
+            titleTokens.some(tToken => {
+              const sim = getSemanticSimilarity(qToken, tToken);
+              return sim >= KW_SIM_THRESHOLD;
+            })
+          ).length;
+          
+          return { item, maxSimilarity, matchCount, allTokensMatched, titleMatchCount, keywordInTitleCount, exactKeywordInTitleCount };
+        }).filter(m => m.matchCount > 0);
         
         console.log(`✅ Semantic keyword match: Found ${keywordMatchesWithScore.length} items`);
       }
