@@ -659,7 +659,8 @@ const uploadQuestionsAnswersService = (pool) => async (req, res) => {
 						if (!norm || seenKw.has(norm)) continue;
 						seenKw.add(norm);
 						try {
-							const { keywordId } = await ensureKeyword(connection, kw, uploaderId);
+							const kwRes = await ensureKeyword(connection, kw, uploaderId);
+						const keywordId = kwRes && kwRes.keywordId ? kwRes.keywordId : null;
 							if (keywordId) createdKws++;
 						} catch (e) {
 							// ignore individual keyword errors

@@ -78,7 +78,8 @@ router.post('/create', async (req, res) => {
         if (!norm || seenKeywords.has(norm)) continue;
         seenKeywords.add(norm);
 
-        const { keywordId } = await ensureKeyword(connection, kw, req.user?.userId);
+        const kwRes = await ensureKeyword(connection, kw, req.user?.userId);
+        const keywordId = kwRes && kwRes.keywordId ? kwRes.keywordId : null;
         if (!keywordId) {
           skippedKeywords.push(kw);
           continue;
@@ -205,7 +206,8 @@ router.put('/update/:id', async (req, res) => {
         if (!norm || seenKeywords.has(norm)) continue;
         seenKeywords.add(norm);
 
-        const { keywordId } = await ensureKeyword(connection, kw, req.user?.userId);
+        const kwRes = await ensureKeyword(connection, kw, req.user?.userId);
+        const keywordId = kwRes && kwRes.keywordId ? kwRes.keywordId : null;
         if (!keywordId) {
           skippedKeywords.push(kw);
           continue;
