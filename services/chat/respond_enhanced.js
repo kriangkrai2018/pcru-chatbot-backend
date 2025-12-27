@@ -376,6 +376,44 @@ module.exports = (pool) => async (req, res) => {
         }
       }
 
+      // Include fallback contacts in the same card as the ranked results
+      const { getDefaultContact } = require('../../utils/getDefaultContact');
+      const defaultContact = await getDefaultContact(connection).catch(() => null);
+      let contactsForCard = [];
+      try {
+        const [contactsRows] = await connection.query(
+          `SELECT DISTINCT org.OrgName AS organization, o.OfficerName AS officer, o.OfficerPhone AS phone
+           FROM Officers o
+           LEFT JOIN Organizations org ON o.OrgID = org.OrgID
+           WHERE o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
+             AND (o.OfficerStatus = 1)
+           ORDER BY org.OrgName ASC
+           LIMIT 50`
+        );
+        const { formatThaiPhone } = require('../../utils/formatPhone');
+        const mapped = (contactsRows || []).map(r => ({
+          organization: r.organization || null,
+          officer: r.officer || null,
+          phone: r.phone || null,
+          officerPhoneRaw: r.phone || null,
+          officerPhone: r.phone ? formatThaiPhone(r.phone) : null
+        }));
+        const findPreferred = (list) => {
+          if (!list) return null;
+          const nameMatch = list.find(c => /วิพาด/.test(String(c.officer || '')));
+          if (nameMatch) return nameMatch;
+          const phoneMatch = list.find(c => (c.phone || '').replace(/\D/g,'').startsWith('081'));
+          if (phoneMatch) return phoneMatch;
+          return null;
+        };
+        const preferred = findPreferred(mapped);
+        if (preferred) contactsForCard = [preferred];
+        else if (mapped.length > 0) contactsForCard = [mapped[0]];
+        else if (defaultContact) contactsForCard = Array.isArray(defaultContact) ? defaultContact : [defaultContact];
+      } catch (e) {
+        contactsForCard = defaultContact ? (Array.isArray(defaultContact) ? defaultContact : [defaultContact]) : [];
+      }
+
       return res.status(200).json({
         success: true,
         found: false,
@@ -385,7 +423,8 @@ module.exports = (pool) => async (req, res) => {
           title: r.item.QuestionTitle,
           preview: (r.item.QuestionText || '').slice(0, 200),
           score: r.score.toFixed(2),
-        }))
+        })),
+        contacts: contactsForCard
       });
     }
 
