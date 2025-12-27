@@ -24,26 +24,25 @@ const getQuestionsAnswersService = (pool) => async (req, res) => {
         connection = await pool.getConnection();
         dbg('✅ Got database connection');
 
-        // Get QuestionsAnswers
+        // Get QuestionsAnswers (always order by QuestionsAnswersID DESC)
         dbg('📝 Fetching questions for officer:', targetOfficerId || 'ALL (admin)');
-        const order = req.query && String(req.query.order || '').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
         let query, params;
         if (isAdmin) {
             // Admin sees all questions
-            query = `SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.ReviewDate, qa.QuestionText, qa.OfficerID,
+                query = `SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.ReviewDate, qa.QuestionText, qa.OfficerID,
                     c.CategoriesName AS CategoriesID
-             FROM QuestionsAnswers qa
-             LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID
-             ORDER BY COALESCE(qa.ReviewDate, qa.QuestionsAnswersID) ${order}`;
+                 FROM QuestionsAnswers qa
+                 LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID
+                 ORDER BY qa.QuestionsAnswersID DESC`;
             params = [];
         } else {
             // Officer sees only their questions
-            query = `SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.ReviewDate, qa.QuestionText, qa.OfficerID,
+                query = `SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.ReviewDate, qa.QuestionText, qa.OfficerID,
                     c.CategoriesName AS CategoriesID
-             FROM QuestionsAnswers qa
-             LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID
-             WHERE qa.OfficerID = ?
-             ORDER BY COALESCE(qa.ReviewDate, qa.QuestionsAnswersID) ${order}`;
+                 FROM QuestionsAnswers qa
+                 LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID
+                 WHERE qa.OfficerID = ?
+                 ORDER BY qa.QuestionsAnswersID DESC`;
             params = [targetOfficerId];
         }
         const [rows] = await connection.query(query, params);
