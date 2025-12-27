@@ -317,7 +317,7 @@ if (fs.existsSync(FRONTEND_DIR)) {
   // Use a generic middleware instead of a path pattern to avoid path-to-regexp issues
   app.use((req, res, next) => {
     if (req.method !== 'GET') return next();
-    const skipPrefixes = ['/api', '/uploads', '/js', '/ranking', '/system', '/categories', '/getcategories', '/chat', '/login', '/forgotpassword', '/setnewpassword', '/validateresettoken', '/questionsanswers', '/stopwords', '/synonyms', '/negativekeywords'];
+    const skipPrefixes = ['/api', '/uploads', '/js', '/ranking', '/system', '/categories', '/getcategories', '/chat', '/login', '/forgotpassword', '/setnewpassword', '/validateresettoken', '/questionsanswers', '/stopwords', '/synonyms', '/negativekeywords', '/adminusers', '/admin'];
     for (const p of skipPrefixes) {
       if (req.path.startsWith(p)) return next();
     }
