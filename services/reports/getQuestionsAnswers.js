@@ -10,8 +10,14 @@ const getQuestionsAnswersService = (pool) => async (req, res) => {
     let connection;
     try {
         const officerId = (req.user?.userId ?? req.user?.officerId);
-        console.log('🔍 getQuestionsAnswers called for officerId:', officerId, 'raw user:', req.user);
-        if (!officerId) {
+        const userRole = req.user?.role;
+        console.log('🔍 getQuestionsAnswers called for officerId:', officerId, 'role:', userRole, 'raw user:', req.user);
+        
+        // Allow admins to see all questions, officers only see their own
+        const isAdmin = userRole === 'Super Admin' || userRole === 'Admin';
+        const targetOfficerId = isAdmin ? null : officerId;
+        
+        if (!isAdmin && !officerId) {
             return res.status(401).json({ success: false, message: 'Unauthorized: Could not identify the user from the token.' });
         }
 
@@ -19,17 +25,28 @@ const getQuestionsAnswersService = (pool) => async (req, res) => {
         dbg('✅ Got database connection');
 
         // Get QuestionsAnswers
-        dbg('📝 Fetching questions for officer:', officerId);
+        dbg('📝 Fetching questions for officer:', targetOfficerId || 'ALL (admin)');
         const order = req.query && String(req.query.order || '').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-        const [rows] = await connection.query(
-            `SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.ReviewDate, qa.QuestionText, qa.OfficerID,
+        let query, params;
+        if (isAdmin) {
+            // Admin sees all questions
+            query = `SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.ReviewDate, qa.QuestionText, qa.OfficerID,
+                    c.CategoriesName AS CategoriesID
+             FROM QuestionsAnswers qa
+             LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID
+             ORDER BY COALESCE(qa.ReviewDate, qa.QuestionsAnswersID) ${order}`;
+            params = [];
+        } else {
+            // Officer sees only their questions
+            query = `SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.ReviewDate, qa.QuestionText, qa.OfficerID,
                     c.CategoriesName AS CategoriesID
              FROM QuestionsAnswers qa
              LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID
              WHERE qa.OfficerID = ?
-             ORDER BY COALESCE(qa.ReviewDate, qa.QuestionsAnswersID) ${order}`,
-            [officerId]
-        );
+             ORDER BY COALESCE(qa.ReviewDate, qa.QuestionsAnswersID) ${order}`;
+            params = [targetOfficerId];
+        }
+        const [rows] = await connection.query(query, params);
         dbg('✅ Found', rows.length, 'questions');
 
         // Get keywords and feedback counts for each question
