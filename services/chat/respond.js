@@ -931,9 +931,33 @@ module.exports = (pool) => async (req, res) => {
 
     // Keyword matching with semantic awareness
     let keywordMatches = [];
+    let keywordMatchesWithScore = [];
     
-    // 🆕 FALLBACK: If all tokens are stopwords (queryTokens is empty), try raw text match
-    if (queryTokens.length === 0) {
+    // 🆕 STRICT EXACT KEYWORD MATCH CHECK
+    // Normalize by removing all whitespace to handle "A B" vs "AB"
+    const normalizeForExact = (s) => String(s || '').toLowerCase().replace(/\s+/g, '');
+    const msgExact = normalizeForExact(message);
+
+    const exactKeywordMatches = qaList.filter(item => 
+      (item.keywords || []).some(k => normalizeForExact(k) === msgExact)
+    );
+
+    if (exactKeywordMatches.length > 0) {
+      console.log(`🎯 Exact keyword match found for "${message}" - restricting to ${exactKeywordMatches.length} items.`);
+      keywordMatchesWithScore = exactKeywordMatches.map(item => ({
+        item,
+        maxSimilarity: 1.0,
+        matchCount: 999,
+        allTokensMatched: true,
+        titleMatchCount: 999,
+        keywordInTitleCount: 999,
+        exactKeywordInTitleCount: 999,
+        components: { overlap: 1, title: 1, semantic: 1 }
+      }));
+    }
+
+    // 🆕 FALLBACK: If all tokens are stopwords (queryTokens is empty) AND no exact match, try raw text match
+    if (keywordMatchesWithScore.length === 0 && queryTokens.length === 0) {
       console.log(`⚠️  Query consists only of stopwords. Trying raw/exact match fallback for: "${message}"`);
       
       const rawQuery = message.toLowerCase().trim();
@@ -1018,14 +1042,15 @@ module.exports = (pool) => async (req, res) => {
       });
     }
     
-    if (queryTokens.length > 0) {
-      console.log(`🔍 Query tokens (after stopword removal): [${queryTokens.join(', ')}]`);
-      console.log(`📊 Total QA items in database: ${qaList.length}`);
-      
-      // Semantic-aware keyword matching with scoring
-      const keywordMatchesWithScore = await Promise.all(qaList.map(async item => {
-        let maxSimilarity = 0;
-        let matchCount = 0;
+    if (keywordMatchesWithScore.length > 0 || queryTokens.length > 0) {
+      if (keywordMatchesWithScore.length === 0) {
+        console.log(`🔍 Query tokens (after stopword removal): [${queryTokens.join(', ')}]`);
+        console.log(`📊 Total QA items in database: ${qaList.length}`);
+        
+        // Semantic-aware keyword matching with scoring
+        keywordMatchesWithScore = await Promise.all(qaList.map(async item => {
+          let maxSimilarity = 0;
+          let matchCount = 0;
         let allTokensMatched = true;
         let keywordInTitleCount = 0; // 🆕 Count matching keywords in title
         let exactKeywordInTitleCount = 0; // 🆕 Count exact keyword matches in title tokens
@@ -1066,9 +1091,10 @@ module.exports = (pool) => async (req, res) => {
         ).length;
         
         return { item, maxSimilarity, matchCount, allTokensMatched, titleMatchCount, keywordInTitleCount, exactKeywordInTitleCount };
-      })).then(matches => matches.filter(m => m.matchCount > 0));
-      
-      console.log(`✅ Semantic keyword match: Found ${keywordMatchesWithScore.length} items`);
+        })).then(matches => matches.filter(m => m.matchCount > 0));
+        
+        console.log(`✅ Semantic keyword match: Found ${keywordMatchesWithScore.length} items`);
+      }
       
       if (keywordMatchesWithScore.length > 0) {
         // Sort by match quality - prioritize title matches
@@ -2383,4 +2409,3 @@ module.exports = (pool) => async (req, res) => {
     if (connection) connection.release();
   }
 };
-

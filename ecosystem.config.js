@@ -4,7 +4,6 @@ module.exports = {
       name: 'pcru-backend',
       script: 'server.js',
       cwd: '/Users/kriangkrai/pcru-chatbot-backend-1',
-      watch: false,
       watch: true,
       ignore_watch: ['node_modules', 'logs', '.git', 'uploads'],
       env: {
