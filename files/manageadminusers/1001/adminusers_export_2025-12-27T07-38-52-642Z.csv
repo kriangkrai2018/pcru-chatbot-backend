@@ -1,0 +1,3 @@
+AdminUserID,AdminName,AdminEmail,ParentAdminID
+1001,Super admin,kriangkrai20181@gmail.com,1001
+1002,นายเกรียงไกร คงเมือง,kriangkrai2018@gmail.com,1001
