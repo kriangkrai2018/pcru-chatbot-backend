@@ -174,7 +174,15 @@ async function normalize(text, pool) {
   try {
   const t = String(text || '').toLowerCase().trim();
   const cleaned = t.replace(/[\p{P}\p{S}]/gu, ' ');
+  // Ensure separation between letters and numbers so tokens like "มี2.00" -> ["มี", "2", "00"]
+  const separated = cleaned.replace(/(\p{L})(\p{N})/gu, '$1 $2').replace(/(\p{N})(\p{L})/gu, '$1 $2');
   const stopwords = await getStopwordsSet(pool);
+  // Debugging: log basic info to help trace why 'มี' isn't removed
+  try {
+    console.log(`🔍 normalize input="${t}" separated="${separated}" stopwordsCount=${stopwords.size} hasมี=${stopwords.has('มี')}`);
+  } catch (e) {
+    // ignore logging errors
+  }
   const shortStopwords = Array.from(stopwords).filter((sw) => sw && sw.length <= 4);
   // Sort stopwords by length descending to match longest possible stopword first (e.g., "อยากรู้" before "รู้")
   const sortedStopwords = Array.from(stopwords).sort((a, b) => b.length - a.length);
@@ -223,14 +231,14 @@ async function normalize(text, pool) {
   };
 
   // Prefer PyThaiNLP tokenizer if service is available
-  const pythonTokens = await tokenizeWithPython(cleaned);
+  const pythonTokens = await tokenizeWithPython(separated);
   if (pythonTokens && pythonTokens.length > 0) {
     const refined = refineTokens(pythonTokens);
     return resolveSynonyms(refined); // 🆕 Resolve synonyms
   }
 
   // Heuristic segmentation fallback: split merged Thai text by short stopwords inside the string
-  let segmented = cleaned;
+  let segmented = separated;
   for (const sw of shortStopwords) {
     segmented = segmented.split(sw).join(' ');
   }
@@ -503,6 +511,24 @@ module.exports = (pool) => async (req, res) => {
   try {
     connection = await pool.getConnection();
     let queryTokens = await normalize(message, pool);
+    // If normalization removed all tokens (e.g., the query was only stopwords),
+    // treat as no-answer and return fallback contact info instead of ranking.
+    if (!queryTokens || queryTokens.length === 0) {
+      try {
+        const { getDefaultContact } = require('../../utils/getDefaultContact');
+        const defaultContact = await getDefaultContact(connection);
+        const contacts = defaultContact ? (Array.isArray(defaultContact) ? defaultContact : [defaultContact]) : [];
+        return res.status(200).json({
+          success: true,
+          found: false,
+          message: `😅 ขออภัยนะ ฉันค่อนข้างงงกับคำถามนี้\n\nถ้าต้องการความช่วยเหลือ ลองติดต่อทีมที่เกี่ยวข้องของมหาวิทยาลัยได้นะ ฉันจะให้ข้อมูลติดต่อให้`,
+          contacts
+        });
+      } catch (e) {
+        console.error('Error returning early fallback for empty tokens:', e && e.message);
+        return res.status(200).json({ success: true, found: false, message: 'ขออภัย ระบบไม่พบคำตอบที่ตรงกับคำถามนี้', results: [] });
+      }
+    }
     
     // ⛔ Capture original tokens (before stopword removal) for negation detection
     const originalTokens = simpleTokenize(message);
