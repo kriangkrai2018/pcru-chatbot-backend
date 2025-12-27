@@ -1200,7 +1200,94 @@ module.exports = (pool) => async (req, res) => {
           // Finally by similarity score
           return b.maxSimilarity - a.maxSimilarity;
         });
-        
+
+        // NEW: If the user's normalized query contains 2 or more tokens, prefer results that match ALL tokens.
+        // If exactly one item fully matches all tokens, return it immediately as the single best answer.
+        try {
+          const queryTokenCount = (Array.isArray(queryTokens) ? queryTokens.length : 0);
+          if (queryTokenCount >= 2) {
+            const allMatched = keywordMatchesWithScore.filter(m => m.allTokensMatched);
+            if (allMatched.length === 1) {
+              const chosen = allMatched[0].item;
+              console.log(`🎯 Exact multi-token match: returning single QA#${chosen.QuestionsAnswersID}`);
+              const formatted = formatAnswer(chosen.QuestionText, chosen.CategoriesID || null, chosen.CategoriesPDF || null);
+              return res.status(200).json({
+                success: true,
+                found: true,
+                message: `🎯 พบคำตอบที่ตรงกับคำค้นทั้งหมด`,
+                totalResults: 1,
+                returnedResults: 1,
+                alternatives: [{
+                  id: chosen.QuestionsAnswersID,
+                  title: chosen.QuestionTitle,
+                  preview: (chosen.QuestionText || '').slice(0, 200),
+                  text: formatted.text,
+                  summary: formatted.summary,
+                  points: formatted.points,
+                  sources: formatted.sources,
+                  keywords: chosen.keywords,
+                  categories: chosen.CategoriesID || null,
+                  categoriesPDF: chosen.CategoriesPDF || null,
+                  finalRanking: rankingById.get(chosen.QuestionsAnswersID) || null
+                }]
+              });
+            } else if (allMatched.length > 1) {
+              // If multiple fully-matching items exist, restrict further processing to them
+              keywordMatchesWithScore = allMatched;
+            }
+          }
+        } catch (err) {
+          console.warn('Error while enforcing multi-token exact-match filter:', err && err.message);
+        }
+
+        // NEW: Strict multi-keyword-only matching: when the normalized query has 2 or more tokens,
+        // require that an item's keywords match EXACTLY the set of query tokens (no extra keywords).
+        try {
+          if (Array.isArray(queryTokens) && queryTokens.length >= 2) {
+            // Build normalized unique set for the query tokens
+            const reqNormArr = Array.from(new Set(queryTokens.map(t => normalizeForExact(t)).filter(Boolean)));
+            const reqSet = new Set(reqNormArr);
+
+            const strictMatches = keywordMatchesWithScore.filter(m => {
+              const kwArr = Array.from(new Set((m.item.keywords || []).map(k => normalizeForExact(k)).filter(Boolean)));
+              const kwSet = new Set(kwArr);
+
+              if (kwSet.size !== reqSet.size) return false;
+              for (const r of reqSet) if (!kwSet.has(r)) return false;
+              return true; // sets are equal
+            });
+
+            if (strictMatches.length > 0) {
+              // Keep strictMatches (items whose keywords contain all query tokens) for subsequent ranking/limiting
+              console.log(`🔎 Found ${strictMatches.length} items containing all query tokens; restricting to them.`);
+              keywordMatchesWithScore = strictMatches;
+            } else {
+              // No strict superset matches; try fallback using raw whitespace-split tokens (helps when stopwords removed tokens)
+              const rawTokens = (String(message || '').toLowerCase().split(/\s+/).map(t => normalizeForExact(t)).filter(Boolean));
+              const rawSetArr = Array.from(new Set(rawTokens));
+              const rawSet = new Set(rawSetArr);
+
+              if (rawSet.size > 0) {
+                const fallbackMatches = keywordMatchesWithScore.filter(m => {
+                  const kwArr = Array.from(new Set((m.item.keywords || []).map(k => normalizeForExact(k)).filter(Boolean)));
+                  const kwSet = new Set(kwArr);
+                  // accept superset with at least the same size as rawSet
+                  if (kwSet.size < rawSet.size) return false;
+                  for (const r of rawSet) if (!kwSet.has(r)) return false;
+                  return true;
+                });
+                if (fallbackMatches.length > 0) {
+                  console.log(`🔁 Fallback: found ${fallbackMatches.length} matches using raw tokens: [${rawSetArr.join(', ')}]`);
+                  keywordMatchesWithScore = fallbackMatches;
+                }
+              }
+              // If still nothing, we do NOT return early; allow normal ranking to proceed (may show broader matches)
+            }
+          }
+        } catch (err) {
+          console.warn('Error while enforcing strict multi-keyword filter:', err && err.message);
+        }
+
         const bestMatch = keywordMatchesWithScore[0];
         
         // Check if exact title match OR all tokens matched with single result
@@ -2127,17 +2214,47 @@ module.exports = (pool) => async (req, res) => {
           });
 
           const topKeywordMatches = reranked.map(m => m.item);
+
+          // Reduce result count when user provides multiple keywords: prefer items with highest matchCount only.
+          const queryTokenCount = Array.isArray(queryTokens) ? queryTokens.length : 0;
+          let filteredReranked = reranked;
+
+          if (queryTokenCount >= 2) {
+            // Find the maximum matchCount among candidates and keep only those with that maximum
+            try {
+              const counts = filteredReranked.map(r => Number(r.matchCount || 0));
+              const maxMatch = counts.length > 0 ? Math.max(...counts) : 0;
+              if (maxMatch > 0) {
+                filteredReranked = filteredReranked.filter(r => (r.matchCount || 0) === maxMatch);
+                console.log(`🔎 Restricting to ${filteredReranked.length} item(s) with max matchCount=${maxMatch}`);
+              }
+            } catch (err) {
+              console.warn('Error while selecting max matchCount items:', err && err.message);
+            }
+          }
+
           // 🆕 Use configurable result limits from environment
           const isCountOrListIntent = isCountIntent || isListIntent;
           const maxCountList = parseInt(process.env.MAX_COUNT_LIST_RESULTS) || 3;
           const maxGeneric = parseInt(process.env.MAX_GENERIC_RESULTS) || 5;
           let desired = isCountOrListIntent ? maxCountList : (isNarrowScholarship ? 2 : maxGeneric);
+
+          // Shrink desired proportionally to the number of query tokens so that more tokens => fewer results
+          if (queryTokenCount >= 2) {
+            desired = Math.max(1, Math.ceil(desired / queryTokenCount));
+          }
+
           if (isVeryShortQuery && !isCountOrListIntent) {
             desired = Math.max(maxGeneric, 5); // คำสั้นให้เห็นหลายตัวเลือก
           }
+
+          // If we filtered the reranked list, use it to build topKeywordMatches
+          const topMatchesSource = filteredReranked;
+          const topKeywordMatchesFiltered = topMatchesSource.map(m => m.item);
+
           // 🆕 Domain-aware expansion: if we have fewer than desired and a domain is active, add extra domain items from corpus
-          if (!isNarrow && domainName && topKeywordMatches.length < desired) {
-            const existingIds = new Set(topKeywordMatches.map(it => it.QuestionsAnswersID));
+          if (!isNarrow && domainName && topKeywordMatchesFiltered.length < desired) {
+            const existingIds = new Set(topKeywordMatchesFiltered.map(it => it.QuestionsAnswersID));
             const domainTermsMap = {
               dorm: dormTerms,
               scholarship: scholarshipTerms,
