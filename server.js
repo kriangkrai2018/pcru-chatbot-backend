@@ -317,7 +317,7 @@ if (fs.existsSync(FRONTEND_DIR)) {
   // Use a generic middleware instead of a path pattern to avoid path-to-regexp issues
   app.use((req, res, next) => {
     if (req.method !== 'GET') return next();
-    const skipPrefixes = ['/api', '/uploads', '/js', '/ranking', '/system', '/categories', '/getcategories', '/chat', '/login', '/forgotpassword', '/setnewpassword', '/validateresettoken', '/questionsanswers', '/stopwords', '/synonyms', '/negativekeywords', '/adminusers', '/admin', '/officers', '/organizations', '/ai-image'];
+    const skipPrefixes = ['/api', '/uploads', '/js', '/ranking', '/system', '/categories', '/getcategories', '/chat', '/login', '/forgotpassword', '/setnewpassword', '/validateresettoken', '/questionsanswers', '/getQuestionsAnswers', '/stopwords', '/synonyms', '/negativekeywords', '/adminusers', '/admin', '/officers', '/organizations', '/ai-image', '/health', '/keywords', '/getChatLogHasAnswers'];
     for (const p of skipPrefixes) {
       if (req.path.startsWith(p)) return next();
     }
@@ -673,6 +673,23 @@ app.use((err, req, res, next) => {
 const BIND_HOST = process.env.HOST || '0.0.0.0';
 // PUBLIC_HOST: the canonical hostname shown to users (e.g. project.3bbddns.com)
 const PUBLIC_HOST = process.env.PUBLIC_HOST || 'project.3bbddns.com';
+
+// Simple health-check endpoint to help detect when the backend is up
+app.get('/health', (req, res) => {
+  res.status(200).json({ success: true, status: 'ok', pid: process.pid, env: process.env.NODE_ENV || 'unknown' });
+});
+
+// Log server-level errors and uncaught exceptions to aid debugging and keep visibility
+process.on('uncaughtException', (err) => {
+  console.error('🔥 Uncaught Exception:', err && (err.stack || err));
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('🔥 Unhandled Rejection:', reason && (reason.stack || reason));
+});
+
+server.on('error', (err) => {
+  console.error('❌ HTTP Server error:', err && (err.message || err));
+});
 
 server.listen(PORT, BIND_HOST, async () => {
   // List non-internal, non-loopback IPv4 addresses for convenience when binding to 0.0.0.0
