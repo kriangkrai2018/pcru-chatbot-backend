@@ -624,12 +624,14 @@ const uploadQuestionsAnswersService = (pool) => async (req, res) => {
 
 				for (const kw of uniqueKws) {
 					try {
-					const { keywordId, created } = await ensureKeyword(connection, kw, uploaderId);
-					if (keywordId) {
-						console.log('[uploadQuestionsAnswers] Inserting AnswersKeywords mapping:', qaId, { keywordId, created });
-						try {
-							await connection.query(
-								'INSERT INTO AnswersKeywords (QuestionsAnswersID, KeywordID) VALUES (?, ?)',
+						const kwRes = await ensureKeyword(connection, kw, uploaderId);
+						const keywordId = kwRes && kwRes.keywordId ? kwRes.keywordId : null;
+						const created = kwRes && kwRes.created ? kwRes.created : false;
+						if (keywordId) {
+							console.log('[uploadQuestionsAnswers] Inserting AnswersKeywords mapping:', qaId, { keywordId, created });
+							try {
+								await connection.query(
+									'INSERT INTO AnswersKeywords (QuestionsAnswersID, KeywordID) VALUES (?, ?)',
 								[qaId, keywordId]
 							);
 						} catch (e) { console.warn('[uploadQuestionsAnswers] Insert AnswersKeywords failed:', e && e.message ? e.message : e); }
