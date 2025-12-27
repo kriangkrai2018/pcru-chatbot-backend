@@ -14,6 +14,34 @@ const markFeedbackHandledService = (pool) => async (req, res) => {
             });
         }
 
+        // Debug: fetch existing feedback row to help diagnose 404 cases
+        let existingRows = [];
+        try {
+            const qr = await pool.query(
+                `SELECT FeedbackID, FeedbackValue, HandledAt FROM Feedbacks WHERE FeedbackID = ? LIMIT 1`,
+                [feedbackId]
+            );
+            existingRows = qr && qr[0] ? qr[0] : [];
+            if (existingRows && existingRows.length > 0) {
+                console.log(`🔎 markFeedbackHandled: found feedback row for id=${feedbackId}:`, existingRows[0]);
+            } else {
+                console.log(`🔎 markFeedbackHandled: no feedback row found for id=${feedbackId}`);
+            }
+        } catch (e) {
+            console.error('🔎 markFeedbackHandled: failed to query existing feedback row:', e && e.message);
+        }
+
+        // If the row exists but is already handled or not of the expected FeedbackValue, return 409 Conflict with a helpful message
+        if (existingRows && existingRows.length > 0) {
+            const row = existingRows[0];
+            if (row.HandledAt) {
+                return res.status(409).json({ success: false, message: 'Feedback already handled' });
+            }
+            if (row.FeedbackValue != null && Number(row.FeedbackValue) !== 0) {
+                return res.status(409).json({ success: false, message: 'Feedback cannot be marked as handled (unsupported feedback type)' });
+            }
+        }
+
         // Mark as handled with current timestamp
         const [result] = await pool.query(
             `UPDATE Feedbacks 
