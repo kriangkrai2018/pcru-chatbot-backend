@@ -2565,28 +2565,27 @@ module.exports = (pool) => async (req, res) => {
       multipleResults: true,
       query: message,
       message: '✨ พบ 3 คำถามที่ใกล้เคียง\n(ลองเลือกซักอันดูสิ 😊)',
-      // 🆕 Include officer contacts relevant to the returned suggestions
-      // Fetch officers ONLY for the top 3 suggestions by their QuestionsAnswersID
+      // Include officer contacts relevant to the categories of the returned suggestions
       ...(await (async () => {
         try {
-          // Extract QuestionsAnswersIDs from top 3 suggestions
-          const qaIds = topRanked
-            .map(r => r && r.item && r.item.QuestionsAnswersID)
+          // Extract CategoriesIDs from top 3 suggestions
+          const categoriesIds = topRanked
+            .map(r => r && r.item && r.item.CategoriesID)
             .filter(id => !!id);
           
-          if (!qaIds || qaIds.length === 0) {
+          if (!categoriesIds || categoriesIds.length === 0) {
             return { contacts: [] };
           }
           
-          // Fetch officers WHERE OfficerID matches the OfficerID in those QuestionsAnswers records
+          // Fetch officers WHERE OfficerID matches the OfficerID in QuestionsAnswers records for those categories
           const [rows] = await connection.query(
             `SELECT DISTINCT o.OfficerID, o.OfficerName AS officer, o.OfficerPhone AS phone, org.OrgName AS organization
              FROM Officers o
              LEFT JOIN Organizations org ON o.OrgID = org.OrgID
              INNER JOIN QuestionsAnswers qa ON qa.OfficerID = o.OfficerID
-             WHERE qa.QuestionsAnswersID IN (?) AND o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
+             WHERE qa.CategoriesID IN (?) AND o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
              ORDER BY org.OrgName ASC`,
-            [qaIds]
+            [categoriesIds]
           );
           
           if (!rows || rows.length === 0) {
@@ -2612,7 +2611,7 @@ module.exports = (pool) => async (req, res) => {
           
           return { contacts: dedup };
         } catch (e) {
-          console.warn('Failed to load officer contacts for suggestions:', e && (e.message || e));
+          console.warn('Failed to load officer contacts for categories in multipleResults:', e && (e.message || e));
           return { contacts: [] };
         }
       })()),
