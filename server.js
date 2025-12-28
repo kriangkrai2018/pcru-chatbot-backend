@@ -390,20 +390,25 @@ app.get('/chat/contacts', async (req, res) => {
       rows = rowsData;
     }
     if (!rows || rows.length === 0) {
-      const [fallbackRows] = await app.locals.pool.query(
-        `SELECT DISTINCT org.OrgName AS organization, o.OfficerName AS officer, o.OfficerPhone AS phone
-         FROM Officers o
-         LEFT JOIN Organizations org ON o.OrgID = org.OrgID
-         WHERE o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
-         ORDER BY org.OrgName ASC
-         LIMIT 20`
+      // Fetch exactly the three preferred organizations from DB (no fallback values)
+      const preferredOrgs = ['กองพัฒนานักศึกษา', 'สำนักส่งเสริมวิชาการและงานทะเบียน', 'สำนักเทคโนโลยีสารสนเทศ'];
+      const [prefRows] = await app.locals.pool.query(
+        `SELECT org.OrgName AS organization, o.OfficerName AS officer, o.OfficerPhone AS phone
+         FROM Organizations org
+         JOIN Officers o ON o.OrgID = org.OrgID
+         WHERE org.OrgName IN (?, ?, ?) AND o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
+         ORDER BY org.OrgName ASC, o.OfficerName ASC
+         LIMIT 3`,
+        preferredOrgs
       );
-      rows = fallbackRows || [];
+
+      // Only return organizations that exist and have officers/phones in DB
+      rows = prefRows || [];
     }
 
     const { formatThaiPhone } = require('./utils/formatPhone');
     // Default contact is sourced from config/DB instead of hardcoding
-    const { getDefaultContact } = require('./utils/getDefaultContact');
+    const { getDefaultContact } = require('./utils/getDefaultContact_fixed');
     const defaultContact = await getDefaultContact(app.locals.pool);
 
     const contacts = (rows || []).map(r => ({

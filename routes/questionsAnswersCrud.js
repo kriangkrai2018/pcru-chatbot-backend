@@ -478,12 +478,19 @@ router.get('/categories', async (req, res) => {
   }
 
   try {
+    // Return only categories that have QAs owned by the logged-in officer
     const [categories] = await pool.query(
-      'SELECT CategoriesID, CategoriesName FROM Categories ORDER BY CategoriesName'
+      `SELECT DISTINCT c.CategoriesID, c.CategoriesName
+       FROM Categories c
+       INNER JOIN QuestionsAnswers qa ON qa.CategoriesID = c.CategoriesID
+       WHERE qa.OfficerID = ?
+       ORDER BY c.CategoriesName`,
+      [req.user?.userId]
     );
 
     res.status(200).json({
       success: true,
+      categories,
       data: categories
     });
 
@@ -618,6 +625,24 @@ router.get('/template', (req, res) => {
     res.status(200).send(headers);
   } catch (err) {
     console.error('Template generation error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * GET /questionsanswers
+ * ดึงรายการคำถาม-คำตอบของเจ้าหน้าที่ที่ล็อกอิน
+ */
+router.get('/questionsanswers', async (req, res) => {
+  const pool = req.pool;
+  if (!pool) {
+    return res.status(500).json({ success: false, message: 'Database pool not available' });
+  }
+  try {
+    const [rows] = await pool.query('SELECT qa.*, c.CategoriesName FROM QuestionsAnswers qa LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID WHERE qa.OfficerID = ? ORDER BY qa.QuestionsAnswersID DESC', [req.user.userId]);
+    res.status(200).json({ success: true, data: rows });
+  } catch (err) {
+    console.error('Get questionsanswers error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });

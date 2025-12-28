@@ -277,7 +277,7 @@ module.exports = (pool) => async (req, res) => {
       const noKeywordMatches = !keywordMatches || keywordMatches.length === 0;
       if (noKeywordMatches) {
         // Get default contact from config/DB (do NOT hardcode)
-        const { getDefaultContact } = require('../../utils/getDefaultContact');
+        const { getDefaultContact } = require('../../utils/getDefaultContact_fixed');
         const defaultContact = await getDefaultContact(connection);
 
         // Formal apology message when nothing at all matches
@@ -345,17 +345,19 @@ module.exports = (pool) => async (req, res) => {
 
           // Prefer to return organizations list (names only) for no-answer fallback (backup)
           try {
+            // Do not return a plain list of organization names as inline text;
+            // prefer returning concise message and leave organization/contact details to other logic
             const [orgRows] = await connection.query(`SELECT OrgName AS organization FROM Organizations ORDER BY OrgName ASC`);
             const orgContacts = (orgRows || []).map(r => ({ organization: r.organization || r.OrgName || '' })).filter(c => c.organization && c.organization.trim());
             return res.status(200).json({
               success: true,
               found: false,
-              message: `ขออภัยค่ะ ในฐานะ Chatbot ของ\nมหาวิทยาลัยราชภัฏเพชรบูรณ์\n(PCRU) ไม่สามารถให้คำตอบสำหรับ\nคำถามนี้ได้ - หากต้องการความช่วย\nเหลือด้านการศึกษาหรือแนะแนวเพิ่ม\nเติม รบกวนติดต่อหน่วยงานที่เกี่ยวข้อง\nของมหาวิทยาลัยนะคะ`,
+              message: 'หากต้องการความช่วยเหลือ โปรดติดต่อเจ้าหน้าที่ด้านล่าง',
               contacts: orgContacts
             });
           } catch (orgErr) {
             console.error('Error fetching organizations for fallback (backup):', orgErr && orgErr.message);
-            return res.status(200).json({ success: true, found: false, message: `ขออภัยค่ะ ในฐานะ Chatbot ของ\nมหาวิทยาลัยราชภัฏเพชรบูรณ์\n(PCRU) ไม่สามารถให้คำตอบสำหรับ\nคำถามนี้ได้`, contacts: [] });
+            return res.status(200).json({ success: true, found: false, message: 'หากต้องการความช่วยเหลือ โปรดติดต่อเจ้าหน้าที่ด้านล่าง', contacts: [] });
           }
         } catch (cErr) {
           console.error('Error fetching officer contacts for apology response:', cErr && cErr.message);
@@ -383,7 +385,7 @@ module.exports = (pool) => async (req, res) => {
             const [orgRows] = await connection.query(`SELECT OrgName AS organization FROM Organizations ORDER BY OrgName ASC`);
             const orgContacts = (orgRows || []).map(r => ({ organization: r.organization || r.OrgName || '' })).filter(c => c.organization && c.organization.trim());
             if (orgContacts.length > 0) {
-              return res.status(200).json({ success: true, found: false, message: `ขออภัยค่ะ ในฐานะ Chatbot ของ\nมหาวิทยาลัยราชภัฏเพชรบูรณ์\n(PCRU) ไม่สามารถให้คำตอบสำหรับ\nคำถามนี้ได้ - หากต้องการความช่วย\nเหลือด้านการศึกษาหรือแนะแนวเพิ่ม\nเติม รบกวนติดต่อหน่วยงานที่เกี่ยวข้อง\nของมหาวิทยาลัยนะคะ`, contacts: orgContacts });
+              return res.status(200).json({ success: true, found: false, message: 'หากต้องการความช่วยเหลือ โปรดติดต่อเจ้าหน้าที่ด้านล่าง', contacts: orgContacts });
             }
           } catch (orgErr) {
             console.error('Error fetching organizations for fallback (backup catch):', orgErr && orgErr.message);
@@ -393,7 +395,7 @@ module.exports = (pool) => async (req, res) => {
           return res.status(200).json({
             success: true,
             found: false,
-            message: `ขออภัยค่ะ ในฐานะ Chatbot ของ\nมหาวิทยาลัยราชภัฏเพชรบูรณ์\n(PCRU) ไม่สามารถให้คำตอบสำหรับ\nคำถามนี้ได้ - หากต้องการความช่วย\nเหลือด้านการศึกษาหรือแนะแนวเพิ่ม\nเติม รบกวนติดต่อหน่วยงานที่เกี่ยวข้อง\nของมหาวิทยาลัยนะคะ`,
+            message: 'หากต้องการความช่วยเหลือ โปรดติดต่อเจ้าหน้าที่ด้านล่าง',
             contacts: orgsFromFallback
           });
         }

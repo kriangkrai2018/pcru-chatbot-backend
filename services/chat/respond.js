@@ -4,171 +4,153 @@
 // 🛡️ QUALITY GUARD: ป้องกัน chatbot ตอบมั่ว ตอบไม่ตรงคำถาม
 // ⛔ NEGATIVE KEYWORDS: ดักจับประโยคปฏิเสธ (Look Backward Algorithm)
 
-const { getStopwordsSet } = require('../stopwords/loadStopwords');
-const { 
-  getSemanticSimilarity: loadSemanticSimilarity
-} = require('../semanticData/loadSemanticData');
-const { calculateFinalRanking } = require('../ranking/calculateFinalRanking');
-const { 
-  loadNegativeKeywords, 
-  getNegativeKeywordsMap,
-  analyzeQueryNegation, 
-  simpleTokenize,
-  checkNegation,
-  detectBridgeIntent,
-  INLINE_NEGATION_PATTERNS
-} = require('../negativeKeywords/loadNegativeKeywords');
-const BOT_PRONOUN = process.env.BOT_PRONOUN || 'หนู';
+// (noKeywordMatches block removed — handled later in the normal response flow)
 
-// 🧠 Sticky negation store per session (in-memory, short-lived)
-const NEGATION_BLOCKS = new Map(); // sessionKey -> { blockedDomains: Set<string>, blockedKeywords: Set<string>, updatedAt: number }
-const NEGATION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+// --- Initialization helpers for semantic/synonym/negative keyword loaders ---
+let SEMANTIC_SIM_MAP = {};
+let getSemanticSimilarity = (a, b) => 0;
+let SYNONYMS_MAPPING = {};
 
-function getSessionKey(req) {
-  const explicit = req.headers['x-session-id'] || req.body?.sessionId;
-  if (explicit) return String(explicit);
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown-ip';
-  const ua = req.headers['user-agent'] || 'unknown-ua';
-  return `${ip}::${ua}`;
+const { loadNegativeKeywords: _loadNegativeKeywords } = require('../negativeKeywords/loadNegativeKeywords');
+
+async function loadNegativeKeywords(pool) {
+  try {
+    if (typeof _loadNegativeKeywords === 'function') return await _loadNegativeKeywords(pool);
+    return {};
+  } catch (e) {
+    console.warn('loadNegativeKeywords wrapper failed:', e && (e.message || e));
+    return {};
+  }
 }
+
+// Ensure stopwords and negativeKeywords helpers are available
+const { getStopwordsSet } = require('../stopwords/loadStopwords');
+const NEG_KW = require('../negativeKeywords/loadNegativeKeywords');
+const { simpleTokenize, analyzeQueryNegation, isNegativeKeyword, getNegativeModifier, checkNegation, getNegativeKeywordsMap, INLINE_NEGATION_PATTERNS, LOOK_BACKWARD_WINDOW } = NEG_KW;
 
 function loadBlockedDomains(req) {
-  const key = getSessionKey(req);
-  const entry = NEGATION_BLOCKS.get(key);
-  if (!entry) return new Set();
-  if (Date.now() - entry.updatedAt > NEGATION_TTL_MS) {
-    NEGATION_BLOCKS.delete(key);
-    return new Set();
-  }
-  return new Set(entry.blockedDomains || []);
+  try {
+    const s = (req && req.session && req.session.blockedDomains) ? req.session.blockedDomains : [];
+    return new Set(Array.isArray(s) ? s : []);
+  } catch (e) { return new Set(); }
 }
 
-// 🆕 Load blocked keywords from session
 function loadBlockedKeywords(req) {
-  const key = getSessionKey(req);
-  const entry = NEGATION_BLOCKS.get(key);
-  if (!entry) return new Set();
-  if (Date.now() - entry.updatedAt > NEGATION_TTL_MS) {
-    NEGATION_BLOCKS.delete(key);
-    return new Set();
-  }
-  return new Set(entry.blockedKeywords || []);
-}
-
-function persistBlockedDomains(req, domains) {
-  const key = getSessionKey(req);
-  const currentDomains = loadBlockedDomains(req);
-  const currentKeywords = loadBlockedKeywords(req);
-  domains.forEach(d => currentDomains.add(d));
-  NEGATION_BLOCKS.set(key, { blockedDomains: currentDomains, blockedKeywords: currentKeywords, updatedAt: Date.now() });
-}
-
-// 🆕 Persist blocked keywords to session
-function persistBlockedKeywords(req, keywords) {
-  const key = getSessionKey(req);
-  const currentDomains = loadBlockedDomains(req);
-  const currentKeywords = loadBlockedKeywords(req);
-  keywords.forEach(k => currentKeywords.add(String(k).toLowerCase()));
-  NEGATION_BLOCKS.set(key, { blockedDomains: currentDomains, blockedKeywords: currentKeywords, updatedAt: Date.now() });
+  try {
+    const s = (req && req.session && req.session.blockedKeywords) ? req.session.blockedKeywords : [];
+    return new Set(Array.isArray(s) ? s : []);
+  } catch (e) { return new Set(); }
 }
 
 function clearBlockedDomains(req) {
-  const key = getSessionKey(req);
-  NEGATION_BLOCKS.delete(key);
+  try {
+    if (req && req.session) {
+      req.session.blockedDomains = [];
+      req.session.blockedKeywords = [];
+    }
+  } catch (e) { }
 }
 
-// Quality guard and verification features removed
+// In-memory map for negation-related state (per-session)
+const NEGATION_BLOCKS = new Map();
 
-// Cache for current request (loaded from DB)
-let SEMANTIC_SIMILARITY = {};
-let SYNONYMS_MAPPING = {}; // InputWord -> TargetKeyword mapping for query resolution
+function getSessionKey(req) {
+  try {
+    if (!req) return 'anonymous';
+    // Prefer express-session ID if present
+    const sid = (req.session && (req.session.id || req.sessionID)) ? (req.session.id || req.sessionID) : null;
+    if (sid) return String(sid);
+    // Fallback to remote IP
+    if (req.ip) return String(req.ip);
+    return 'anonymous';
+  } catch (e) { return 'anonymous'; }
+}
 
-// 🆕 Track queries for learning (even failed ones)
-const recentQueries = new Map(); // query -> { timestamp, matched: boolean }
-const RECENT_QUERY_TTL = 60000; // 1 minute
+function persistBlockedKeywords(req, keywords) {
+  try {
+    if (!Array.isArray(keywords)) return;
+    const existing = loadBlockedKeywords(req);
+    const combined = new Set([...(existing || []), ...keywords.map(k => String(k).toLowerCase())]);
+    if (req && req.session) req.session.blockedKeywords = Array.from(combined);
+    const key = getSessionKey(req);
+    const entry = NEGATION_BLOCKS.get(key) || { blockedDomains: new Set(), blockedKeywords: new Set(), updatedAt: 0 };
+    entry.blockedKeywords = new Set(Array.from(entry.blockedKeywords || []).concat(Array.from(combined)));
+    entry.updatedAt = Date.now();
+    NEGATION_BLOCKS.set(key, entry);
+  } catch (e) { console.warn('persistBlockedKeywords failed', e && (e.message || e)); }
+}
 
-// 🆕 Track successful patterns for learning
-const successfulPatterns = new Map(); // pattern -> count
+function persistBlockedDomains(req, domains) {
+  try {
+    if (!Array.isArray(domains)) return;
+    const existing = loadBlockedDomains(req);
+    const combined = new Set([...(existing || []), ...domains.map(d => String(d).toLowerCase())]);
+    if (req && req.session) req.session.blockedDomains = Array.from(combined);
+    const key = getSessionKey(req);
+    const entry = NEGATION_BLOCKS.get(key) || { blockedDomains: new Set(), blockedKeywords: new Set(), updatedAt: 0 };
+    entry.blockedDomains = new Set(Array.from(entry.blockedDomains || []).concat(Array.from(combined)));
+    entry.updatedAt = Date.now();
+    NEGATION_BLOCKS.set(key, entry);
+  } catch (e) { console.warn('persistBlockedDomains failed', e && (e.message || e)); }
+}
 
-/**
- * Load synonyms mapping from database into memory cache
- * Maps InputWord -> TargetKeyword for query resolution
- * @param {Pool} pool - MySQL connection pool
- */
+function resolveSynonyms(tokens) {
+  if (!Array.isArray(tokens)) return tokens;
+  try {
+    return tokens.map(t => {
+      const k = String(t || '').toLowerCase().trim();
+      if (SYNONYMS_MAPPING && SYNONYMS_MAPPING[k]) return SYNONYMS_MAPPING[k];
+      return t;
+    });
+  } catch (e) { return tokens; }
+}
+
+async function loadSemanticData(pool) {
+  try {
+    const loader = require('../semanticData/loadSemanticData');
+    const map = await loader.getSemanticSimilarity(pool);
+    SEMANTIC_SIM_MAP = map || {};
+    getSemanticSimilarity = (w1, w2) => {
+      try {
+        if (!w1 || !w2) return 0;
+        if (SEMANTIC_SIM_MAP[w1] && typeof SEMANTIC_SIM_MAP[w1][w2] !== 'undefined') return SEMANTIC_SIM_MAP[w1][w2];
+        return 0;
+      } catch (e) {
+        return 0;
+      }
+    };
+    return SEMANTIC_SIM_MAP;
+  } catch (e) {
+    console.warn('loadSemanticData: semantic loader not available or failed', e && (e.message || e));
+    SEMANTIC_SIM_MAP = {};
+    getSemanticSimilarity = () => 0;
+    return {};
+  }
+}
+
 async function loadSynonymsMapping(pool) {
   try {
     const connection = await pool.getConnection();
-    const [synonyms] = await connection.query(`
-      SELECT 
-        s.InputWord,
-        k.KeywordText AS TargetKeyword
-      FROM KeywordSynonyms s
-      LEFT JOIN Keywords k ON s.TargetKeywordID = k.KeywordID
-      WHERE s.IsActive = 1 AND k.KeywordText IS NOT NULL
-    `);
+    const [rows] = await connection.query(
+      `SELECT s.InputWord AS input, k.KeywordText AS target
+       FROM KeywordSynonyms s
+       JOIN Keywords k ON s.TargetKeywordID = k.KeywordID
+       WHERE s.IsActive = 1`
+    );
     connection.release();
-    
     SYNONYMS_MAPPING = {};
-    for (const row of synonyms) {
-      SYNONYMS_MAPPING[row.InputWord.toLowerCase()] = row.TargetKeyword.toLowerCase();
+    for (const r of rows || []) {
+      if (r && r.input && r.target) SYNONYMS_MAPPING[String(r.input).toLowerCase().trim()] = String(r.target).toLowerCase().trim();
     }
-    
-    console.log(`✅ Loaded ${Object.keys(SYNONYMS_MAPPING).length} synonym mappings`);
-  } catch (error) {
-    console.error('❌ Error loading synonyms:', error.message);
+    console.log('✅ Loaded', Object.keys(SYNONYMS_MAPPING).length, 'synonyms');
+    return SYNONYMS_MAPPING;
+  } catch (e) {
+    console.warn('loadSynonymsMapping failed or not available:', e && (e.message || e));
     SYNONYMS_MAPPING = {};
+    return {};
   }
 }
 
-/**
- * Load semantic data from database into memory cache
- * @param {Pool} pool - MySQL connection pool
- */
-async function loadSemanticData(pool) {
-  SEMANTIC_SIMILARITY = await loadSemanticSimilarity(pool);
-}
-
-/**
- * Calculate semantic similarity score between two words
- * @param {string} word1 
- * @param {string} word2 
- * @returns {number} similarity score (0-1)
- */
-function getSemanticSimilarity(word1, word2) {
-  // Exact match
-  if (word1 === word2) return 1.0;
-  
-  // Check synonym dictionary (from database)
-  if (SEMANTIC_SIMILARITY[word1] && SEMANTIC_SIMILARITY[word1][word2]) {
-    return SEMANTIC_SIMILARITY[word1][word2];
-  }
-  
-  // Substring match (partial)
-  if (word1.includes(word2) || word2.includes(word1)) {
-    const longer = word1.length > word2.length ? word1 : word2;
-    const shorter = word1.length <= word2.length ? word1 : word2;
-    return shorter.length / longer.length * 0.7; // Partial match bonus
-  }
-  
-  return 0.0;
-}
-
-/**
- * Resolve synonyms in tokens - replace InputWord with TargetKeyword
- * @param {Array<string>} tokens - Array of tokens
- * @returns {Array<string>} tokens with synonyms resolved
- */
-function resolveSynonyms(tokens) {
-  return tokens.map(token => {
-    const lowerToken = token.toLowerCase();
-    // If this token is a synonym, replace with target keyword
-    if (SYNONYMS_MAPPING[lowerToken]) {
-      console.log(`🔄 Synonym resolved: '${token}' -> '${SYNONYMS_MAPPING[lowerToken]}'`);
-      return SYNONYMS_MAPPING[lowerToken];
-    }
-    return token;
-  });
-}
 
 async function normalize(text, pool) {
   try {
@@ -459,9 +441,23 @@ module.exports = (pool) => async (req, res) => {
   }
 
   // Load semantic data, synonyms, and negative keywords from database at start of each request
-  await loadSemanticData(pool);
-  await loadSynonymsMapping(pool); // 🆕 Load synonym mappings
-  await loadNegativeKeywords(pool); // ⛔ Load negative keywords
+  try {
+    await loadSemanticData(pool);
+  } catch (e) {
+    console.warn('loadSemanticData error (continuing):', e && (e.message || e));
+  }
+
+  try {
+    await loadSynonymsMapping(pool); // 🆕 Load synonym mappings
+  } catch (e) {
+    console.warn('loadSynonymsMapping error (continuing):', e && (e.message || e));
+  }
+
+  try {
+    await loadNegativeKeywords(pool); // ⛔ Load negative keywords
+  } catch (e) {
+    console.warn('loadNegativeKeywords error (continuing):', e && (e.message || e));
+  }
   
   const message = req.body?.message || req.body?.text || '';
   const questionId = req.body?.id;
@@ -510,19 +506,23 @@ module.exports = (pool) => async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
+    // Helper: split phone text into multiple phone entries (e.g., "056-717-119 หรือ 056-717-100 ต่อ 1121, 1122")
+    const parsePhones = (raw) => {
+      if (!raw) return [];
+      return String(raw).split(/(?:หรือ|,|;|\/|\||\n)/i).map(p => p.trim()).filter(Boolean);
+    };
     let queryTokens = await normalize(message, pool);
     // If normalization removed all tokens (e.g., the query was only stopwords),
     // treat as no-answer and return fallback contact info instead of ranking.
     if (!queryTokens || queryTokens.length === 0) {
       try {
-        const { getDefaultContact } = require('../../utils/getDefaultContact');
-        const defaultContact = await getDefaultContact(connection);
-        const contacts = defaultContact ? (Array.isArray(defaultContact) ? defaultContact : [defaultContact]) : [];
+        const { getDefaultContacts } = require('../../utils/getDefaultContact_fixed');
+        const defaultContacts = await getDefaultContacts(connection);
         return res.status(200).json({
           success: true,
           found: false,
-          message: `😅 ขออภัยนะ ฉันค่อนข้างงงกับคำถามนี้\n\nถ้าต้องการความช่วยเหลือ ลองติดต่อทีมที่เกี่ยวข้องของมหาวิทยาลัยได้นะ ฉันจะให้ข้อมูลติดต่อให้`,
-          contacts
+          message: `😓 ขออภัยจริงๆ ฉันไม่มีข้อมูลเกี่ยวกับคำถามนี้`,
+          contacts: defaultContacts
         });
       } catch (e) {
         console.error('Error returning early fallback for empty tokens:', e && e.message);
@@ -1424,8 +1424,8 @@ module.exports = (pool) => async (req, res) => {
           
           // 🔗 Bridge Intent Detection: user negates one domain but wants another
           const domainTermsMap = { scholarship: scholarshipTerms, dorm: dormTerms, admissions: admissionsTerms };
-          const bridgeIntent = detectBridgeIntent(originalTokens, domainTermsMap);
-          if (bridgeIntent.hasBridgeIntent) {
+          const bridgeIntent = (NEG_KW && typeof NEG_KW.detectBridgeIntent === 'function') ? NEG_KW.detectBridgeIntent(originalTokens, domainTermsMap) : { hasBridgeIntent: false, negatedDomains: [], wantedDomains: [] };
+          if (bridgeIntent && bridgeIntent.hasBridgeIntent) {
             console.log(`🔗 Bridge intent detected: negated=[${bridgeIntent.negatedDomains.join(', ')}], wanted=[${bridgeIntent.wantedDomains.join(', ')}]`);
           }
           
@@ -2523,132 +2523,19 @@ module.exports = (pool) => async (req, res) => {
 
       const noKeywordMatches = !keywordMatches || keywordMatches.length === 0;
       if (noKeywordMatches) {
-        // Get default contact from config/DB (do NOT hardcode)
-        const { getDefaultContact } = require('../../utils/getDefaultContact');
-        const defaultContact = await getDefaultContact(connection);
-
+        const { getDefaultContacts } = require('../../utils/getDefaultContact_fixed');
         try {
-          const [contactsRows] = await connection.query(
-            `SELECT DISTINCT org.OrgName AS organization, o.OfficerName AS officer, o.OfficerPhone AS phone
-             FROM Officers o
-             LEFT JOIN Organizations org ON o.OrgID = org.OrgID
-             WHERE o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
-             ORDER BY org.OrgName ASC
-             LIMIT 50`
-          );
-
-          const { formatThaiPhone } = require('../../utils/formatPhone');
-          let contacts = (contactsRows || []).map(r => ({
-            organization: r.organization || null,
-            officer: r.officer || null,
-            phone: r.phone || null,
-            officerPhoneRaw: r.phone || null,
-            officerPhone: r.phone ? formatThaiPhone(r.phone) : null
-          }));
-
-          // Prefer a contact where name matches 'วิพาด' or phone starts with '081' if present
-          const findPreferred = (list) => {
-            if (!list) return null;
-            const nameMatch = list.find(c => /วิพาด/.test(String(c.officer || '')));
-            if (nameMatch) return nameMatch;
-            const phoneMatch = list.find(c => (c.phone || '').replace(/\D/g,'').startsWith('081'));
-            if (phoneMatch) return phoneMatch;
-            return null;
-          };
-          const preferred = findPreferred(contacts);
-          if (preferred) { contacts = [preferred]; console.log('Selected preferred contact from contactsRows:', preferred); }
-
-          // If no contacts found, try to prefer a real officer from DB that matches the expected default
-          if (!contacts || contacts.length === 0) {
-            try {
-              const [dbDefault] = await connection.query(
-                `SELECT o.OfficerPhone AS phone, o.OfficerName AS officer, org.OrgName AS organization
-                 FROM Officers o
-                 LEFT JOIN Organizations org ON o.OrgID = org.OrgID
-                 WHERE (REPLACE(o.OfficerName, '…', '') LIKE ? OR REPLACE(REPLACE(org.OrgName, '\\t', ''), '…', '') LIKE ?) AND o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
-                 LIMIT 1`, ['%วิพาด%', '%ส่งเสริม%']
-              );
-              if (dbDefault && dbDefault.length > 0) {
-                const r = dbDefault[0];
-                console.log('Using DB default contact for fallback:', r);
-                contacts = [{
-                  organization: r.organization || defaultContact.organization,
-                  officer: r.officer || defaultContact.officer,
-                  phone: r.phone || defaultContact.phone,
-                  officerPhoneRaw: r.phone || defaultContact.officerPhoneRaw,
-                  officerPhone: r.phone ? formatThaiPhone(r.phone) : defaultContact.officerPhone
-                }];
-              } else {
-                console.log('No DB contact found for default; using static default');
-                contacts = [defaultContact];
-              }
-            } catch (e) {
-              console.error('Error fetching default contact from DB', e && (e.message || e));
-              contacts = [defaultContact];
-            }
-          }
-
-          // Instead of returning a single/small list of contacts, return the full Organizations list (names only)
-          try {
-            const [orgRows] = await connection.query(`SELECT OrgName AS organization FROM Organizations ORDER BY OrgName ASC`);
-            const orgContacts = (orgRows || []).map(r => ({ organization: r.organization || r.OrgName || '' })).filter(c => c.organization && c.organization.trim());
-            return res.status(200).json({
-              success: true,
-              found: false,
-              message: `😅 ขออภัยนะ ฉันค่อนข้างงงกับคำถามนี้\n\nถ้าต้องการความช่วยเหลือ ลองติดต่อทีมที่เกี่ยวข้องของมหาวิทยาลัยได้นะ ฉันจะให้ข้อมูลติดต่อให้`,
-              contacts: orgContacts
-            });
-          } catch (orgErr) {
-            console.error('Error fetching Organizations for fallback:', orgErr && orgErr.message);
-            // Fallback to previous contacts array if org query fails
-            return res.status(200).json({
-              success: true,
-              found: false,
-              message: `😅 ขออภัยนะ ฉันค่อนข้างงงกับคำถามนี้\n\nถ้าต้องการความช่วยเหลือ ลองติดต่อทีมที่เกี่ยวข้องของมหาวิทยาลัยได้นะ ฉันจะให้ข้อมูลติดต่อให้`,
-              contacts
-            });
-          }
-        } catch (cErr) {
-          console.error('Error fetching officer contacts:', cErr && cErr.message);
-          // If defaultContact is available, return it; otherwise, try to return officers who authored QAs
-          let fallbackContacts = [];
-          if (defaultContact) {
-            fallbackContacts = Array.isArray(defaultContact) ? defaultContact : [defaultContact];
-          } else {
-            try {
-              const [qaOfficers] = await connection.query(
-                `SELECT DISTINCT o.OfficerID, o.OfficerName AS officer, o.OfficerPhone AS phone, org.OrgName AS organization
-                 FROM Officers o
-                 LEFT JOIN Organizations org ON o.OrgID = org.OrgID
-                 INNER JOIN QuestionsAnswers qa ON qa.OfficerID = o.OfficerID
-                 WHERE o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
-                 ORDER BY qa.QuestionsAnswersID DESC
-                 LIMIT 5`
-              );
-              fallbackContacts = (qaOfficers || []).map(r => ({ organization: r.organization || null, officer: r.officer || null, phone: r.phone || null, officerPhoneRaw: r.phone || null, officerPhone: r.phone ? formatThaiPhone(r.phone) : null })).filter(Boolean);
-            } catch (e) {
-              console.error('Error fetching QA officers for fallback:', e && e.message);
-            }
-          }
-
-          // Try to return organizations list first; if unavailable, fall back to organization names from fallbackContacts
-          try {
-            const [orgRows] = await connection.query(`SELECT OrgName AS organization FROM Organizations ORDER BY OrgName ASC`);
-            const orgContacts = (orgRows || []).map(r => ({ organization: r.organization || r.OrgName || '' })).filter(c => c.organization && c.organization.trim());
-            if (orgContacts.length > 0) {
-              return res.status(200).json({ success: true, found: false, message: `😓 ขออภัยจริงๆ ฉันไม่มีข้อมูลเกี่ยวกับคำถามนี้\n\n`, contacts: orgContacts });
-            }
-          } catch (orgErr) {
-            console.error('Error fetching organizations for fallback (respond):', orgErr && orgErr.message);
-          }
-
-          const orgsFromFallback = (fallbackContacts || []).map(c => ({ organization: c.organization || c.OrgName || null })).filter(Boolean);
+          const contacts = await getDefaultContacts(connection);
+          console.log('noKeyword fallback contacts count=', Array.isArray(contacts) ? contacts.length : 0, 'sample=', Array.isArray(contacts) ? contacts.slice(0,3) : contacts);
           return res.status(200).json({
             success: true,
             found: false,
-            message: `😓 ขออภัยจริงๆ ฉันไม่มีข้อมูลเกี่ยวกับคำถามนี้\n\n`,
-            contacts: orgsFromFallback
+            message: `😓 ขออภัยจริงๆ ฉันไม่มีข้อมูลเกี่ยวกับคำถามนี้`,
+            contacts: contacts
           });
+        } catch (e) {
+          console.error('Error fetching default contacts for fallback:', e && (e.message || e));
+          return res.status(200).json({ success: true, found: false, message: `� ขออภัยจริงๆ ฉันไม่มีข้อมูลเกี่ยวกับคำถามนี้`, contacts: [] });
         }
       }
 
@@ -2744,7 +2631,9 @@ module.exports = (pool) => async (req, res) => {
     });
   } catch (err) {
     console.error('chat/respond error:', err && (err.message || err));
-    res.status(500).json({ success: false, message: '😭 อุ๊ะ มีปัญหาเล็กน้อยเกิดขึ้น ลองใหม่ดูนะ' });
+    if (err && err.stack) console.error(err.stack);
+    const detail = err && err.stack ? String(err.stack).split('\n').slice(0,10).join('\n') : (err && err.message) || null;
+    res.status(500).json({ success: false, message: '😭 อุ๊ะ มีปัญหาเล็กน้อยเกิดขึ้น ลองใหม่ดูนะ', detail });
   } finally {
     if (connection) connection.release();
   }

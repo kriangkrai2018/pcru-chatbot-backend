@@ -1,4 +1,11 @@
+// This file does not contain a leading markdown fence.
 const { formatThaiPhone } = require('./formatPhone');
+
+// Helper: split phone text into multiple phone entries
+const parsePhones = (raw) => {
+  if (!raw) return [];
+  return String(raw).split(/(?:หรือ|,|;|\/|\||\n)/i).map(p => p.trim()).filter(Boolean);
+};
 
 /**
  * Retrieve default contact from DB based on configuration.
@@ -59,4 +66,38 @@ async function getDefaultContact(pool) {
   }
 }
 
-module.exports = { getDefaultContact };
+/**
+ * Retrieve default contacts from DB based on configuration.
+ * Returns all contacts from Categories_Contact.
+ * @param {Pool} pool - mysql2/promise pool
+ */
+async function getDefaultContacts(pool) {
+  if (!pool) return [];
+  try {
+    const [rows] = await pool.query(
+      `SELECT org.OrgName AS organization, c.CategoriesName AS category, cc.Contact
+       FROM Organizations org
+       LEFT JOIN Officers o ON org.OrgID = o.OrgID
+       LEFT JOIN Categories c ON o.OfficerID = c.OfficerID
+       LEFT JOIN Categories_Contact cc ON c.CategoriesID = cc.CategoriesID
+       WHERE (cc.Contact IS NOT NULL AND TRIM(cc.Contact) <> '') OR (c.CategoriesID IS NULL)
+       ORDER BY org.OrgID ASC, c.CategoriesName ASC`
+    );
+
+    if (!rows || rows.length === 0) return [];
+
+    // Map rows to desired response shape: { organization, category, contact }
+    const contacts = rows.map(r => ({
+      organization: r.organization || null,
+      category: r.category || null,
+      contact: r.Contact || null
+    }));
+
+    return contacts;
+  } catch (e) {
+    console.error('getDefaultContacts failed:', e && (e.message || e));
+    return [];
+  }
+}
+
+module.exports = { getDefaultContact, getDefaultContacts };

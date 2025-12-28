@@ -210,6 +210,11 @@ module.exports = (pool) => async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
+    // Helper: split phone text into multiple phone entries
+    const parsePhones = (raw) => {
+      if (!raw) return [];
+      return String(raw).split(/(?:หรือ|,|;|\/|\||\n)/i).map(p => p.trim()).filter(Boolean);
+    };
     const queryTokens = await normalize(message, pool);
 
     const qaList = await fetchQAWithKeywords(connection);
@@ -279,7 +284,7 @@ module.exports = (pool) => async (req, res) => {
       const noKeywordMatches = !keywordMatches || keywordMatches.length === 0;
       if (noKeywordMatches) {
         // Get default contact from config/DB (do NOT hardcode)
-        const { getDefaultContact } = require('../../utils/getDefaultContact');
+        const { getDefaultContact } = require('../../utils/getDefaultContact_fixed');
         const defaultContact = await getDefaultContact(connection);
         try {
           const [contactsRows] = await connection.query(
@@ -342,17 +347,36 @@ module.exports = (pool) => async (req, res) => {
 
           // Prefer to return organizations list (names only) for no-answer fallback
           try {
-            const [orgRows] = await connection.query(`SELECT OrgName AS organization FROM Organizations ORDER BY OrgName ASC`);
-            const contacts = (orgRows || []).map(r => ({ organization: r.organization || r.OrgName || '' })).filter(c => c.organization && c.organization.trim());
+            // Try find related officers by searching Q&A text first
+            const searchText = `%${connection.escape(message).slice(1,-1)}%`;
+            const [relatedOfficers] = await connection.query(
+              `SELECT DISTINCT o.OfficerName AS name, o.OfficerPhone AS phone, o.OfficerEmail AS email, org.OrgName AS organization
+               FROM QuestionsAnswers qa
+               JOIN Officers o ON qa.OfficerID = o.OfficerID
+               LEFT JOIN Organizations org ON o.OrgID = org.OrgID
+               WHERE (qa.QuestionTitle LIKE ? OR qa.QuestionText LIKE ?)
+                 AND o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
+               ORDER BY qa.QuestionsAnswersID DESC
+               LIMIT 3`,
+              [searchText, searchText]
+            );
+
+            let contacts;
+            if (relatedOfficers && relatedOfficers.length > 0) {
+              contacts = (relatedOfficers || []).map(r => ({ name: r.name, phones: parsePhones(r.phone), phoneRaw: r.phone, email: r.email, organization: r.organization })).filter(c => (c.name && c.name.trim()) || (c.organization && c.organization.trim()));
+            } else {
+              // No related officers found - return an empty contacts array so UI shows only the concise help prompt
+              contacts = [];
+            }
             return res.status(200).json({
               success: true,
               found: false,
-              message: `ขออภัยค่ะ ในฐานะ Chatbot ของ\nมหาวิทยาลัยราชภัฏเพชรบูรณ์\n(PCRU) ไม่สามารถให้คำตอบสำหรับ\nคำถามนี้ได้ - หากต้องการความช่วย\nเหลือด้านการศึกษาหรือแนะแนวเพิ่ม\nเติม รบกวนติดต่อหน่วยงานที่เกี่ยวข้อง\nของมหาวิทยาลัยนะคะ`,
+              message: 'หากต้องการความช่วยเหลือ โปรดติดต่อเจ้าหน้าที่ด้านล่าง',
               contacts
             });
           } catch (orgErr) {
             console.error('Error fetching organizations for fallback (enhanced):', orgErr && orgErr.message);
-            return res.status(200).json({ success: true, found: false, message: `ขออภัยค่ะ ในฐานะ Chatbot ของ\nมหาวิทยาลัยราชภัฏเพชรบูรณ์\n(PCRU) ไม่สามารถให้คำตอบสำหรับ\nคำถามนี้ได้`, contacts: [] });
+            return res.status(200).json({ success: true, found: false, message: 'หากต้องการความช่วยเหลือ โปรดติดต่อเจ้าหน้าที่ด้านล่าง', contacts: [] });
           }
         } catch (cErr) {
           console.error('Error fetching officer contacts:', cErr && cErr.message);
@@ -378,7 +402,7 @@ module.exports = (pool) => async (req, res) => {
           return res.status(200).json({
             success: true,
             found: false,
-            message: `ขออภัยค่ะ ในฐานะ Chatbot ของ\nมหาวิทยาลัยราชภัฏเพชรบูรณ์\n(PCRU) ไม่สามารถให้คำตอบสำหรับ\nคำถามนี้ได้`,
+            message: 'หากต้องการความช่วยเหลือ โปรดติดต่อเจ้าหน้าที่ด้านล่าง',
             contacts: fallbackContacts
           });
         }

@@ -20,7 +20,7 @@ const getCategoriesService = (pool) => async (req, res) => {
                 `SELECT c.CategoriesID, c.CategoriesName, c.OfficerID, c.ParentCategoriesID, c.CategoriesPDF,
                         (SELECT GROUP_CONCAT(Contact SEPARATOR ' ||| ') FROM Categories_Contact cc2 WHERE cc2.CategoriesID = c.CategoriesID) AS Contact
                  FROM Categories c
-                 WHERE c.OfficerID = ? OR c.OfficerID IS NULL
+                 WHERE c.OfficerID = ?
                  ORDER BY c.CategoriesID ${order}`,
                 [officerId]
             );
