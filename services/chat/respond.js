@@ -2565,53 +2565,15 @@ module.exports = (pool) => async (req, res) => {
       multipleResults: true,
       query: message,
       message: '✨ พบ 3 คำถามที่ใกล้เคียง\n(ลองเลือกซักอันดูสิ 😊)',
-      // Include officer contacts relevant to the categories of the returned suggestions
+      // Include default contacts like in no-answer fallback
       ...(await (async () => {
         try {
-          // Extract CategoriesIDs from top 3 suggestions
-          const categoriesIds = topRanked
-            .map(r => r && r.item && r.item.CategoriesID)
-            .filter(id => !!id);
-          
-          if (!categoriesIds || categoriesIds.length === 0) {
-            return { contacts: [] };
-          }
-          
-          // Fetch officers WHERE OfficerID matches the OfficerID in QuestionsAnswers records for those categories
-          const [rows] = await connection.query(
-            `SELECT DISTINCT o.OfficerID, o.OfficerName AS officer, o.OfficerPhone AS phone, org.OrgName AS organization
-             FROM Officers o
-             LEFT JOIN Organizations org ON o.OrgID = org.OrgID
-             INNER JOIN QuestionsAnswers qa ON qa.OfficerID = o.OfficerID
-             WHERE qa.CategoriesID IN (?) AND o.OfficerPhone IS NOT NULL AND TRIM(o.OfficerPhone) <> ''
-             ORDER BY org.OrgName ASC`,
-            [categoriesIds]
-          );
-          
-          if (!rows || rows.length === 0) {
-            return { contacts: [] };
-          }
-          
-          const { formatThaiPhone } = require('../../utils/formatPhone');
-          const contacts = (rows || []).map(r => ({
-            organization: r.organization || null,
-            officer: r.officer || null,
-            phone: r.phone || null,
-            officerPhoneRaw: r.phone || null,
-            officerPhone: r.phone ? formatThaiPhone(r.phone) : null
-          }));
-          
-          // Deduplicate by officer+phone
-          const dedup = [];
-          const seen = new Set();
-          for (const c of contacts) {
-            const key = `${c.officer || ''}::${c.phone || ''}`;
-            if (!seen.has(key)) { seen.add(key); dedup.push(c); }
-          }
-          
-          return { contacts: dedup };
+          const { getDefaultContacts } = require('../../utils/getDefaultContact_fixed');
+          const contacts = await getDefaultContacts(connection);
+          console.log('multipleResults fallback contacts count=', Array.isArray(contacts) ? contacts.length : 0, 'sample=', Array.isArray(contacts) ? contacts.slice(0,3) : contacts);
+          return { contacts: contacts };
         } catch (e) {
-          console.warn('Failed to load officer contacts for categories in multipleResults:', e && (e.message || e));
+          console.warn('Failed to load default contacts for multipleResults:', e && (e.message || e));
           return { contacts: [] };
         }
       })()),
