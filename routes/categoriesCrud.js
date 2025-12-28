@@ -113,6 +113,17 @@ router.post('/create', async (req, res) => {
       [newCategoryId, categoriesName.trim(), officerID, parentCategoriesID || newCategoryId, categoriesPDF || null]
     );
 
+    // Also store Contact if provided
+    if (req.body && typeof req.body.contact !== 'undefined') {
+      const contactVal = req.body.contact && String(req.body.contact).trim() ? String(req.body.contact).trim() : null;
+      // delete any existing contact rows just in case
+      await connection.query('DELETE FROM Categories_Contact WHERE CategoriesID = ?', [newCategoryId]);
+      if (contactVal) {
+        await connection.query('INSERT INTO Categories_Contact (CategoriesID, Contact) VALUES (?, ?)', [newCategoryId, contactVal]);
+        console.log('[categoriesCrud] inserted Contact for new category', newCategoryId, contactVal && contactVal.slice(0,100));
+      }
+    }
+
     // Notify WebSocket clients
     if (req.app.locals.notifyCategoriesUpdate) {
       req.app.locals.notifyCategoriesUpdate({ action: 'create', id: newCategoryId });
@@ -231,6 +242,17 @@ router.put('/update/:id', async (req, res) => {
         'UPDATE Categories SET ParentCategoriesID = ? WHERE CategoriesID = ?',
         [categoryId, categoryId]
       );
+    }
+
+    // Update Contact in Categories_Contact if provided
+    if (req.body && typeof req.body.contact !== 'undefined') {
+      const contactVal = req.body.contact && String(req.body.contact).trim() ? String(req.body.contact).trim() : null;
+      // delete existing contact rows for this category
+      await connection.query('DELETE FROM Categories_Contact WHERE CategoriesID = ?', [categoryId]);
+      if (contactVal) {
+        await connection.query('INSERT INTO Categories_Contact (CategoriesID, Contact) VALUES (?, ?)', [categoryId, contactVal]);
+        console.log('[categoriesCrud] updated Contact for category', categoryId, contactVal && contactVal.slice(0,100));
+      }
     }
 
     // Notify WebSocket clients
@@ -376,12 +398,13 @@ router.get('/single/:id', async (req, res) => {
   try {
     // Get category
     const [category] = await pool.query(
-      `SELECT c.CategoriesID, c.CategoriesName, c.CategoriesDetail,
+      `SELECT c.CategoriesID, c.CategoriesName, c.CategoriesDetail, c.ParentCategoriesID, c.CategoriesPDF,
+              (SELECT GROUP_CONCAT(Contact SEPARATOR ' ||| ') FROM Categories_Contact cc WHERE cc.CategoriesID = c.CategoriesID) AS Contact,
               COUNT(qa.QuestionsAnswersID) AS qaCount
        FROM Categories c
        LEFT JOIN QuestionsAnswers qa ON c.CategoriesID = qa.CategoriesID
        WHERE c.CategoriesID = ?
-       GROUP BY c.CategoriesID, c.CategoriesName, c.CategoriesDetail`,
+       GROUP BY c.CategoriesID, c.CategoriesName, c.CategoriesDetail, c.ParentCategoriesID, c.CategoriesPDF`,
       [categoryId]
     );
 
