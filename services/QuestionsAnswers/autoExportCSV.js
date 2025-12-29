@@ -28,16 +28,18 @@ async function autoExportQuestionsAnswersCSV(pool, officerId = 3001) {
         qa.ReviewDate,
         qa.OfficerID,
         qa.CategoriesID,
+        c.CategoriesName,
         GROUP_CONCAT(DISTINCT k.KeywordText ORDER BY k.KeywordText SEPARATOR ', ') as Keywords
       FROM QuestionsAnswers qa
       LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID
       LEFT JOIN AnswersKeywords ak ON qa.QuestionsAnswersID = ak.QuestionsAnswersID
       LEFT JOIN Keywords k ON ak.KeywordID = k.KeywordID
+      WHERE qa.OfficerID = ?
       GROUP BY qa.QuestionsAnswersID
       ORDER BY qa.QuestionsAnswersID ASC
     `;
     
-    const [rows] = await connection.query(query);
+    const [rows] = await connection.query(query, [officerId]);
     
     if (rows.length === 0) {
       console.log('⚠️  No Q&As to export');
@@ -73,13 +75,7 @@ async function autoExportQuestionsAnswersCSV(pool, officerId = 3001) {
       QuestionTitle: row.QuestionTitle || '',
       ReviewDate: row.ReviewDate ? new Date(row.ReviewDate).toISOString().split('T')[0] : '',
       Keywords: row.Keywords || '',
-      CategoriesID: (() => {
-        const val = row.CategoriesID || '';
-        const s = String(val);
-        // Prevent Excel from auto-converting values like 1-1 into dates (e.g., 1-ม.ค.)
-        // Wrap value as formula text ="1-1" so Excel treats it strictly as text
-        return /^\d{1,2}-\d{1,2}$/.test(s) ? `="${s}"` : s;
-      })(),
+      CategoriesID: row.CategoriesName || '',
       QuestionText: row.QuestionText || ''
     }));
     

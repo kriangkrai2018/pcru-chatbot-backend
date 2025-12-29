@@ -517,6 +517,22 @@ const uploadQuestionsAnswersService = (pool) => async (req, res) => {
 										CategoriesID = `${monthMatch[1]}-${thaiMonths[monthMatch[2]]}`;
 									}
 								}
+
+								// 🆕 Map category name to ID if it's not already an ID
+								if (CategoriesID && !/^\d{1,2}-\d{1,2}$/.test(CategoriesID)) {
+									// It's likely a category name, try to find the ID
+									try {
+										const [categoryRows] = await connection.query('SELECT CategoriesID FROM Categories WHERE CategoriesName = ? LIMIT 1', [CategoriesID.trim()]);
+										if (categoryRows.length > 0) {
+											CategoriesID = categoryRows[0].CategoriesID;
+											console.log(`[uploadQuestionsAnswers] row ${rowNum}: Mapped category name "${r.CategoriesID}" to ID "${CategoriesID}"`);
+										} else {
+											console.warn(`[uploadQuestionsAnswers] row ${rowNum}: Category name "${CategoriesID}" not found in database, keeping as is`);
+										}
+									} catch (err) {
+										console.error(`[uploadQuestionsAnswers] row ${rowNum}: Error mapping category name to ID:`, err.message);
+									}
+								}
 				let ReviewDate = toIsoDate(ReviewDateRaw);
 				if (!ReviewDate) {
 					ReviewDate = new Date().toISOString().slice(0,10);
