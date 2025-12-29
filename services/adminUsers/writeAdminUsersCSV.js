@@ -11,9 +11,9 @@ const writeAdminUsersCSV = (pool, uploaderId = 1) => async () => {
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const baseDir = path.join(__dirname, '..', '..', 'files', 'manageadminusers', String(uploaderId));
-  const filename = `adminusers_export_${timestamp}.csv`;
   const filenameLatest = `adminusers_export_latest.csv`;
-  const filePath = path.join(baseDir, filename);
+  const tmpFilename = `adminusers_export_${timestamp}.tmp`;
+  const tmpPath = path.join(baseDir, tmpFilename);
   const latestPath = path.join(baseDir, filenameLatest);
 
   await fs.mkdir(baseDir, { recursive: true });
@@ -34,11 +34,37 @@ const writeAdminUsersCSV = (pool, uploaderId = 1) => async () => {
 
   const csvContent = lines.join('\n') + '\n';
 
-  await fs.writeFile(filePath, csvContent, 'utf8');
-  // also write latest copy for quick download by frontend
-  await fs.writeFile(latestPath, csvContent, 'utf8');
+  console.log(`🔁 writeAdminUsersCSV: starting write for uploaderId=${uploaderId}, tmp=${tmpPath}`);
+  try {
+    await fs.writeFile(tmpPath, csvContent, 'utf8');
+    await fs.rename(tmpPath, latestPath);
+    console.log(`✅ writeAdminUsersCSV: wrote latestPath=${latestPath}`);
+  } catch (err) {
+    console.error('❌ writeAdminUsersCSV: failed to write/rename file', err && (err.message || err));
+    throw err;
+  }
 
-  return { filePath, latestPath };
+  // Cleanup: remove any other files in directory except latest
+  try {
+    const files = await fs.readdir(baseDir);
+    for (const f of files) {
+      if (f === filenameLatest) continue;
+      try {
+        const p = path.join(baseDir, f);
+        const st = await fs.stat(p);
+        if (st.isFile()) {
+          await fs.unlink(p);
+          console.log(`🧹 writeAdminUsersCSV: removed old file ${p}`);
+        }
+      } catch (err) {
+        console.error('Failed to remove non-latest file in adminusers dir', f, err && err.message);
+      }
+    }
+  } catch (err) {
+    console.error('Error cleaning up adminusers export files:', err && err.message);
+  }
+
+  return { latestPath };
 };
 
 function escapeCsv(value) {

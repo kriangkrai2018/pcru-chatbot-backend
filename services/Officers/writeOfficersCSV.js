@@ -64,26 +64,16 @@ const writeOfficersCSV = (pool, uploaderId = 1) => async () => {
     await fs.writeFile(tmpPath, csvContent, 'utf8');
     await fs.rename(tmpPath, latestPath);
     console.log(`✅ writeOfficersCSV: wrote latestPath=${latestPath}`);
-
-    // Also write/overwrite a stable file name that legacy frontends may request
-    try {
-      const stablePath = path.join(baseDir, 'last_uploaded_officers.csv');
-      await fs.copyFile(latestPath, stablePath);
-      console.log(`🔁 writeOfficersCSV: updated stable file ${stablePath}`);
-    } catch (copyErr) {
-      console.error('❌ writeOfficersCSV: failed to write stable last_uploaded file', copyErr && (copyErr.message || copyErr));
-    }
   } catch (err) {
     console.error('❌ writeOfficersCSV: failed to write/rename file', err && (err.message || err));
     throw err;
   }
 
-  // Cleanup: remove any other files in directory except latest and stable
+  // Cleanup: remove any other files in directory except latest
   try {
     const files = await fs.readdir(baseDir);
     for (const f of files) {
       if (f === filenameLatest) continue;
-      if (f === 'last_uploaded_officers.csv') continue;
       try {
         const p = path.join(baseDir, f);
         const st = await fs.stat(p);
