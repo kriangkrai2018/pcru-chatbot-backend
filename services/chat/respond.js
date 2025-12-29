@@ -58,15 +58,38 @@ function getSessionKey(req) {
 
 function loadBlockedDomains(req) {
   try {
-    const s = (req && req.session && req.session.blockedDomains) ? req.session.blockedDomains : [];
-    return new Set(Array.isArray(s) ? s : []);
+    // 1. ลองดึงจาก Session ก่อน
+    let sessionDomains = (req && req.session && req.session.blockedDomains) ? req.session.blockedDomains : [];
+    
+    // 2. ดึงจาก Global Cache (แผนสำรอง ถ้า Session หลุด)
+    const key = getSessionKey(req);
+    const globalEntry = NEGATION_BLOCKS.get(key);
+    let globalDomains = globalEntry ? Array.from(globalEntry.blockedDomains) : [];
+
+    // รวมกันทั้ง 2 แหล่ง
+    return new Set([...sessionDomains, ...globalDomains]);
   } catch (e) { return new Set(); }
 }
 
 function loadBlockedKeywords(req) {
   try {
-    const s = (req && req.session && req.session.blockedKeywords) ? req.session.blockedKeywords : [];
-    return new Set(Array.isArray(s) ? s : []);
+    // 1. ลองดึงจาก Session ก่อน
+    let sessionKeywords = (req && req.session && req.session.blockedKeywords) ? req.session.blockedKeywords : [];
+    
+    // 2. ดึงจาก Global Cache (แผนสำรอง ถ้า Session หลุด)
+    const key = getSessionKey(req);
+    const globalEntry = NEGATION_BLOCKS.get(key);
+    let globalKeywords = globalEntry ? Array.from(globalEntry.blockedKeywords) : [];
+
+    // รวมกันทั้ง 2 แหล่ง
+    const combined = new Set([...sessionKeywords, ...globalKeywords]);
+    
+    // DEBUG: ดูว่าโหลดคำแบนอะไรมาได้บ้าง
+    if (combined.size > 0) {
+        console.log(`[DEBUG] Loaded Blocked Keywords for ${key}:`, Array.from(combined));
+    }
+    
+    return combined;
   } catch (e) { return new Set(); }
 }
 
