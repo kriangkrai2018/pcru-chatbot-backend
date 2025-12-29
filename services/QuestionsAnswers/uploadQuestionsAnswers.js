@@ -38,10 +38,96 @@ const uploadQuestionsAnswersService = (pool) => async (req, res) => {
 	});
 	console.log('[uploadQuestionsAnswers] req.file:', req.file, 'req.files:', req.files);
 
+	// Get uploader ID early for directory creation
+	const uploaderId = req.user?.userId;
+	if (!uploaderId) {
+		return res.status(401).json({ success: false, message: 'Unauthorized: uploader not identified from token.' });
+	}
+
+	// Create user-specific directory (no 'file' subfolder now)
+	const userUploadDir = path.join(__dirname, '..', '..', 'files', 'managequestionsanswers', String(uploaderId));
+	await fs.promises.mkdir(userUploadDir, { recursive: true });
+
+	// Helper: clear directory (optionally keep one path)
+	async function clearUserDir(dir, keepPath = null) {
+		try {
+			const entries = await fs.promises.readdir(dir);
+			for (const entry of entries) {
+				const entryPath = path.join(dir, entry);
+				try {
+					const stat = await fs.promises.stat(entryPath);
+					if (stat.isFile()) {
+						if (keepPath && path.resolve(entryPath) === path.resolve(keepPath)) {
+							// skip deleting the file we plan to keep
+							continue;
+						}
+						await fs.promises.unlink(entryPath).catch(()=>{});
+					} else if (stat.isDirectory()) {
+						// remove directory recursively
+						await fs.promises.rm(entryPath, { recursive: true, force: true }).catch(()=>{});
+					}
+				} catch(e) {
+					// ignore stat/unlink errors per file
+				}
+			}
+		} catch (e) {
+			// ignore if directory missing or other issues
+		}
+	}
+
 	// If multer used upload.any(), pick first file
 	if (!req.file && Array.isArray(req.files) && req.files.length > 0) {
 		req.file = req.files[0];
 		console.log('[uploadQuestionsAnswers] selected req.file from req.files:', req.file.fieldname, req.file.originalname);
+	}
+
+	// If file was uploaded via multer to different location, move it to user directory
+	let movedFile = false;
+	if (req.file && req.file.path) {
+		const currentPath = req.file.path;
+		const fileName = `upload_questionsanswers_${Date.now()}_${req.file.originalname || 'file.csv'}`;
+		const newPath = path.join(userUploadDir, fileName);
+		
+		// Determine if the current path is already in the target user directory
+		const alreadyInUserDir = path.resolve(currentPath).includes(path.resolve(path.join('files','managequestionsanswers', String(uploaderId))));
+
+		// Clear existing files, but keep currentPath if it's already inside userUploadDir
+		await clearUserDir(userUploadDir, alreadyInUserDir ? currentPath : null);
+
+		// Move/rename or copy+delete depending on disk
+		if (!alreadyInUserDir) {
+			try {
+				await fs.promises.rename(currentPath, newPath);
+				req.file.path = newPath;
+				movedFile = true;
+				console.log('[uploadQuestionsAnswers] Moved file from', currentPath, 'to', newPath);
+			} catch (moveErr) {
+				try {
+					await fs.promises.copyFile(currentPath, newPath);
+					await fs.promises.unlink(currentPath).catch(() => {});
+					req.file.path = newPath;
+					movedFile = true;
+					console.log('[uploadQuestionsAnswers] Copied and moved file to', newPath);
+				} catch (copyErr) {
+					console.error('[uploadQuestionsAnswers] Failed to move/copy file:', copyErr);
+				}
+			}
+		} else {
+			// Already in the correct directory: optionally normalize filename
+			if (path.resolve(currentPath) !== path.resolve(newPath)) {
+				try {
+					await fs.promises.rename(currentPath, newPath);
+					req.file.path = newPath;
+					console.log('[uploadQuestionsAnswers] Renamed existing file in user dir to', newPath);
+				} catch (renameErr) {
+					// if rename fails, keep currentPath
+					req.file.path = currentPath;
+					console.log('[uploadQuestionsAnswers] Keeping existing file path in user dir:', currentPath);
+				}
+			} else {
+				req.file.path = currentPath;
+			}
+		}
 	}
 
 	// Fallback: accept CSV in body under file/csv/etc or raw text
@@ -67,9 +153,12 @@ const uploadQuestionsAnswersService = (pool) => async (req, res) => {
 					detectedMime = 'text/csv';
 				}
 			}
-			await fs.promises.mkdir(path.join(__dirname, '..', '..', 'uploads'), { recursive: true });
 			const fileName = `upload_questionsanswers_${Date.now()}.csv`;
-			tempFilePath = path.join(__dirname, '..', '..', 'uploads', fileName);
+			tempFilePath = path.join(userUploadDir, fileName);
+
+			// Remove previous files in the user dir before writing the new one
+			await clearUserDir(userUploadDir);
+
 			const buffer = Buffer.from(base64Data, 'base64');
 			await fs.promises.writeFile(tempFilePath, buffer);
 			req.file = { path: tempFilePath, originalname: fileName, mimetype: detectedMime };
@@ -423,6 +512,14 @@ const uploadQuestionsAnswersService = (pool) => async (req, res) => {
 
 		// Determine OfficerID to use for inserted QAs: if uploader is an Officer use their ID, otherwise set NULL for Admins
 		const ownerOfficerId = (req.user && req.user.usertype === 'Officer') ? uploaderId : null;
+
+		if (ownerOfficerId !== null) {
+			const [officerCheck] = await connection.query('SELECT 1 FROM Officers WHERE OfficerID = ? LIMIT 1', [ownerOfficerId]);
+			if (!officerCheck || officerCheck.length === 0) {
+				console.warn(`[uploadQuestionsAnswers] uploaderId ${ownerOfficerId} not found in Officers table, setting to NULL`);
+				ownerOfficerId = null;
+			}
+		}
 
 		// Attempt to determine a numeric next ID in case QuestionsAnswersID is NOT auto-increment.
 		// This will be used when CSV rows do not provide an ID but the DB requires one.

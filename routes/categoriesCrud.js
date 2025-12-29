@@ -315,19 +315,28 @@ router.delete('/delete/:id', async (req, res) => {
   try {
     connection = await pool.getConnection();
 
-    // Check if category has associated QuestionsAnswers
+    // Check if category or its subcategories have associated QuestionsAnswers
     const [qaCount] = await connection.query(
-      'SELECT COUNT(*) AS count FROM QuestionsAnswers WHERE CategoriesID = ?',
-      [categoryId]
+      'SELECT COUNT(*) AS count FROM QuestionsAnswers WHERE CategoriesID = ? OR CategoriesID LIKE ?',
+      [categoryId, `${categoryId}-%`]
     );
 
     if (qaCount[0].count > 0) {
       return res.status(400).json({
         success: false,
-        message: `ไม่สามารถลบหมวดหมู่นี้ได้ เนื่องจากมีคำถาม-คำตอบ ${qaCount[0].count} รายการอยู่ในหมวดหมู่นี้`,
+        message: `ไม่สามารถลบหมวดหมู่นี้ได้ เนื่องจากมีคำถาม-คำตอบ ${qaCount[0].count} รายการอยู่ในหมวดหมู่หลักหรือย่อยนี้`,
         qaCount: qaCount[0].count
       });
     }
+
+    // Delete contacts for subcategories
+    await connection.query('DELETE FROM Categories_Contact WHERE CategoriesID LIKE ?', [`${categoryId}-%`]);
+
+    // Delete subcategories
+    await connection.query('DELETE FROM Categories WHERE ParentCategoriesID = ?', [categoryId]);
+
+    // Delete contacts for main category
+    await connection.query('DELETE FROM Categories_Contact WHERE CategoriesID = ?', [categoryId]);
 
     // Delete the category
     const [result] = await connection.query(

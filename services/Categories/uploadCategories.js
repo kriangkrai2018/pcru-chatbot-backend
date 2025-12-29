@@ -144,6 +144,14 @@ const uploadCategoriesService = (pool) => async (req, res) => {
 
         const ownerOfficerId = (req.user && req.user.usertype === 'Officer') ? uploaderId : null;
 
+        if (ownerOfficerId !== null) {
+            const [officerCheck] = await connection.query('SELECT 1 FROM Officers WHERE OfficerID = ? LIMIT 1', [ownerOfficerId]);
+            if (!officerCheck || officerCheck.length === 0) {
+                console.warn(`[uploadCategories] uploaderId ${ownerOfficerId} not found in Officers table, setting to NULL`);
+                ownerOfficerId = null;
+            }
+        }
+
         // Clean existing data if not append mode
         if (!allowDuplicates && !allowExactDuplicates) {
             if (ownerOfficerId === null) {
