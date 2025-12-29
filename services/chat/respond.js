@@ -365,19 +365,30 @@ module.exports = (pool) => async (req, res) => {
         }
     }
 
+    // --- DEBUG START: วางตรงนี้เพื่อดู log ใน Terminal ---
+    const debugNegMap = (NEG_KW_MODULE.getNegativeKeywordsMap && NEG_KW_MODULE.getNegativeKeywordsMap()) || {};
+    console.log('--- DEBUG NEGATION ---');
+    console.log('User Message:', message);
+    console.log('Loaded Negative Words:', Object.keys(debugNegMap).length); 
+    // ถ้า Loaded Negative Words เป็น 0 แสดงว่า Module ไม่ส่งค่ามา ต้องใช้การ Query สด
+    // --- DEBUG END ---
+
     // -------------------------------------------------------------
-    // 4. Negation Handling (Revised & Fixed)
+    // 4. Negation Handling (Ultimate Fix)
     // -------------------------------------------------------------
-    const originalTokens = simpleTokenize(message);
-    const negationAnalysis = analyzeQueryNegation(originalTokens, queryTokens);
     const blockedDomainsFromSession = loadBlockedDomains(req);
     const blockedKeywordsFromSession = loadBlockedKeywords(req);
+    
+    // --- DEBUG: เช็คว่า Server เห็นข้อความว่าอะไร ---
+    console.log('------------------------------------------------');
+    console.log('Incoming Message Raw:', message); 
+    // ถ้าตรงนี้ขึ้นว่า "เอาทุน" แสดงว่า "ไม่" ถูกตัดมาจาก Frontend หรือ Middleware อื่น
+    console.log('------------------------------------------------');
 
-    // 4.1 Check if user types a keyword that is ALREADY blocked
+    // 4.1 ตรวจสอบว่าคำที่ user พิมพ์มา เคยถูกบล็อกไปแล้วหรือยัง
     if (blockedKeywordsFromSession.size > 0) {
-      const msgLowerForBlock = message.toLowerCase().trim();
+      const msgLowerForBlock = message.toLowerCase();
       let matchedBlockedKeyword = null;
-      // Check for exact match or inclusion
       for (const blocked of blockedKeywordsFromSession) {
         if (msgLowerForBlock.includes(blocked)) { 
              matchedBlockedKeyword = blocked; 
@@ -388,7 +399,7 @@ module.exports = (pool) => async (req, res) => {
         return res.status(200).json({ 
             success: true, 
             found: false, 
-            message: `${BOT_PRONOUN}จำได้ว่าคุณไม่สนใจเรื่อง "${matchedBlockedKeyword}" แล้วค่ะ (หากเปลี่ยนใจสามารถพิมพ์ค้นหาใหม่ได้เลย)`, 
+            message: `${BOT_PRONOUN}จำได้ว่าคุณไม่สนใจเรื่อง "${matchedBlockedKeyword}" แล้วค่ะ (พิมพ์ค้นหาเรื่องอื่นได้เลยนะคะ)`, 
             blockedDomains: Array.from(blockedDomainsFromSession), 
             blockedKeywords: Array.from(blockedKeywordsFromSession), 
             blockedKeywordsDisplay: [matchedBlockedKeyword] 
@@ -396,94 +407,80 @@ module.exports = (pool) => async (req, res) => {
       }
     }
 
-    // 4.2 Dynamic Negative Keyword Detection
-    // Force fetch the latest map from the module to ensure data is loaded
-    const negMap = (NEG_KW_MODULE.getNegativeKeywordsMap && NEG_KW_MODULE.getNegativeKeywordsMap()) || {};
-    const negationWordsSet = new Set();
-    if (negMap) Object.keys(negMap).forEach(w => { if (w.trim()) negationWordsSet.add(w.trim().toLowerCase()); });
+    // 4.2 Dynamic Negative Detection (Robust Fetch)
+    let negativeWordsList = [];
+    
+    // พยายามโหลดจาก Module ก่อน
+    const moduleMap = (NEG_KW_MODULE.getNegativeKeywordsMap && NEG_KW_MODULE.getNegativeKeywordsMap()) || {};
+    negativeWordsList = Object.keys(moduleMap).map(w => w.trim().toLowerCase()).filter(w => w);
+
+    // ถ้า Module ว่าง ให้ดึงจาก DB โดยตรง (แบบครอบคลุมทุกชื่อ Column)
+    if (negativeWordsList.length === 0) {
+        try {
+            // SELECT * เพื่อกันพลาดเรื่องชื่อ Column
+            const [negRows] = await connection.query("SELECT * FROM NegativeKeywords WHERE IsActive = 1"); 
+            if (negRows.length > 0) {
+                // หา Column ที่น่าจะเป็นคำศัพท์ (Word, InputWord, KeywordText, etc.)
+                const firstRow = negRows[0];
+                const keyCol = Object.keys(firstRow).find(k => /word|text|keyword/i.test(k)) || Object.keys(firstRow)[1]; // เดาเอาถ้าหาไม่เจอ
+                
+                negativeWordsList = negRows.map(r => String(r[keyCol] || '').trim().toLowerCase());
+                console.log(`Fetched ${negativeWordsList.length} negative words from DB (Column: ${keyCol})`);
+            }
+        } catch (dbErr) {
+            console.error('Error fetching negative keywords:', dbErr.message);
+        }
+    }
+
+    // *** FALLBACK LIST (กันตาย) *** // ถ้า DB พัง หรือหาไม่เจอ ให้ใช้ลิสต์นี้แน่นอน
+    if (negativeWordsList.length === 0) {
+        negativeWordsList = ['ไม่', 'ไม่เอา', 'ยกเลิก', 'พอ', 'หยุด', 'ไม่ต้องการ', 'บ่เอา'];
+        console.log('Using Hardcoded Fallback Negative List');
+    }
+
+    // เรียงคำปฏิเสธจาก "ยาวไปสั้น" (สำคัญมาก: 'ไม่เอา' ต้องมาก่อน 'ไม่')
+    negativeWordsList.sort((a, b) => b.length - a.length);
 
     let hasNegationTrigger = false;
-    let explicitNegationFound = false; // Flag for exact rejection phrase like "ไม่เอา"
-    const negatedKeywordsFromMessage = [];
-    const negatedKeywordsDisplayMap = new Map();
-    
-    // Sort prefixes by length (Longest first) to catch "ไม่เอา" before "ไม่"
-    const negationPrefixes = Array.from(negationWordsSet).sort((a, b) => b.length - a.length);
+    let targetRejection = ''; 
     const msgLower = message.toLowerCase().trim();
-    
-    for (const prefix of negationPrefixes) {
-      const prefixIdx = msgLower.indexOf(prefix);
-      if (prefixIdx !== -1) {
-        hasNegationTrigger = true;
-        
-        // Check what comes AFTER the negative word
-        let afterPrefix = msgLower.slice(prefixIdx + prefix.length).trim();
-        
-        if (afterPrefix.length > 0) {
-          // If there is text after (e.g., "ไม่เอาทุน")
-          // Try to grab the first meaningful word
-          let firstWord = afterPrefix.split(/[\s,.:;!?]+/)[0]; // Simple split
-          
-          if (firstWord && firstWord.length >= 2) {
-             negatedKeywordsFromMessage.push(firstWord);
-             negatedKeywordsDisplayMap.set(firstWord, firstWord);
-          }
+
+    for (const prefix of negativeWordsList) {
+        // เช็คว่าประโยค "ขึ้นต้นด้วย" หรือ "มีคำว่า" คำปฏิเสธหรือไม่
+        if (msgLower.startsWith(prefix) || msgLower.indexOf(prefix) === 0) {
+            hasNegationTrigger = true;
+            
+            // ตัดคำปฏิเสธออก: "ไม่เอาทุน" -> ตัด "ไม่เอา" -> เหลือ "ทุน"
+            let remainingText = msgLower.substring(prefix.length).trim();
+            
+            if (remainingText.length > 0) {
+                targetRejection = remainingText;
+            }
+            break; 
+        }
+    }
+
+    // 4.3 ตัดสินใจ (Decision Logic)
+    if (hasNegationTrigger) {
+        if (targetRejection.length > 1) {
+             persistBlockedKeywords(req, [targetRejection]);
+             return res.status(200).json({ 
+                success: true, 
+                found: false, 
+                message: `รับทราบค่ะ ${BOT_PRONOUN}จะไม่แสดงข้อมูลเกี่ยวกับ "${targetRejection}" ให้กวนใจแล้วค่ะ`,
+                blockedDomains: Array.from(loadBlockedDomains(req)), 
+                blockedKeywords: Array.from(loadBlockedKeywords(req)), 
+                blockedKeywordsDisplay: [targetRejection] 
+            });
         } else {
-            // Found a negative word BUT nothing followed it (e.g. User typed just "ไม่เอา")
-            // This counts as an explicit negation which should stop the search
-            explicitNegationFound = true;
+             return res.status(200).json({ 
+                success: true, 
+                found: false, 
+                message: `รับทราบค่ะ ${BOT_PRONOUN}ยกเลิกการค้นหาให้แล้วนะคะ`, 
+                blockedDomains: Array.from(loadBlockedDomains(req)), 
+                blockedKeywords: Array.from(loadBlockedKeywords(req))
+            });
         }
-        // If we found a match, we can stop checking shorter prefixes
-        if (negatedKeywordsFromMessage.length > 0 || explicitNegationFound) break; 
-      }
-    }
-
-    // 4.3 Check Domain Negation (from AI analysis if available)
-    const negatedDomains = [];
-    if (negationAnalysis.hasNegation) {
-      for (const n of negationAnalysis.negatedKeywords) {
-        const negWord = String(n.negativeWord || '').toLowerCase();
-        // Only trust AI if the negative word is in our approved list
-        if (!negationWordsSet.has(negWord) && !hasNegationTrigger) continue;
-        
-        hasNegationTrigger = true;
-        let kw = String(n.keyword || '').toLowerCase();
-        if (kw.length >= 2) {
-            negatedKeywordsFromMessage.push(kw);
-            negatedKeywordsDisplayMap.set(kw, n.keyword || kw);
-        }
-        if (kw.includes('หอ')) negatedDomains.push('dorm');
-        if (kw.includes('รับสมัคร') || kw.includes('สมัคร')) negatedDomains.push('admissions');
-      }
-    }
-
-    const uniqueNegatedKeywords = [...new Set(negatedKeywordsFromMessage)].filter(k => k && k.length >= 2);
-    let filteredNegatedKeywords = uniqueNegatedKeywords;
-
-    // 4.4 FINAL NEGATION DECISION
-    // If we found keywords to block OR user explicitly said "No" (explicitNegationFound)
-    if (hasNegationTrigger && (filteredNegatedKeywords.length > 0 || negatedDomains.length > 0 || explicitNegationFound)) {
-      
-      if (filteredNegatedKeywords.length > 0) persistBlockedKeywords(req, filteredNegatedKeywords);
-      if (negatedDomains.length > 0) persistBlockedDomains(req, negatedDomains);
-      
-      let replyMsg = '';
-      if (filteredNegatedKeywords.length > 0) {
-          const blockedNames = filteredNegatedKeywords.join(', ');
-          replyMsg = `รับทราบค่ะ ${BOT_PRONOUN}จะไม่แสดงข้อมูลเกี่ยวกับ "${blockedNames}" แล้วนะคะ`;
-      } else {
-          // Case: User said "ไม่เอา" but didn't specify what.
-          replyMsg = `รับทราบค่ะ ${BOT_PRONOUN}ยกเลิกการค้นหาให้แล้วนะคะ หากต้องการสอบถามเรื่องอื่นพิมพ์มาได้เลยค่ะ`;
-      }
-
-      return res.status(200).json({ 
-          success: true, 
-          found: false, 
-          message: replyMsg,
-          blockedDomains: Array.from(loadBlockedDomains(req)), 
-          blockedKeywords: Array.from(loadBlockedKeywords(req)), 
-          blockedKeywordsDisplay: uniqueNegatedKeywords 
-      });
     }
 
     // 5. Ranking

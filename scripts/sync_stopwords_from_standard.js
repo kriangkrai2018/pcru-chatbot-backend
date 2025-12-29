@@ -86,8 +86,29 @@ async function syncStopwords(externalPool = null) {
 
     console.log(`📊 Found ${existingSet.size} existing stopwords in database`);
 
-    // Prepare new stopwords to insert
-    const newStopwords = STANDARD_THAI_STOPWORDS.filter(word => !existingSet.has(word));
+    // Get negative keywords to avoid duplicates
+    const [negRows] = await connection.query("SELECT Word FROM NegativeKeywords WHERE IsActive = 1");
+    const negativeKeywordsSet = new Set(negRows.map(r => r.Word.toLowerCase()));
+    console.log(`🚫 Found ${negativeKeywordsSet.size} active negative keywords`);
+
+    // Load previously removed stopwords to avoid re-adding them
+    let removedStopwordsSet = new Set();
+    try {
+      const removedData = JSON.parse(fs.readFileSync('nonstandard_stopwords_report.json', 'utf8'));
+      if (removedData.all) {
+        removedStopwordsSet = new Set(removedData.all.map(w => w.toLowerCase()));
+      }
+      console.log(`🗑️ Found ${removedStopwordsSet.size} previously removed stopwords`);
+    } catch (e) {
+      console.log('ℹ️ No removed stopwords file found, proceeding without it');
+    }
+
+    // Prepare new stopwords to insert (exclude existing, negative keywords, and removed)
+    const newStopwords = STANDARD_THAI_STOPWORDS.filter(word => 
+      !existingSet.has(word) && 
+      !negativeKeywordsSet.has(word.toLowerCase()) && 
+      !removedStopwordsSet.has(word.toLowerCase())
+    );
 
     if (newStopwords.length === 0) {
       console.log('✅ All standard stopwords already exist in database. Nothing to add.');

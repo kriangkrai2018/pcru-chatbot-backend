@@ -58,8 +58,8 @@ def connect_to_database():
         print("   3. Check if database exists")
         sys.exit(1)
 
-def sync_stopwords(connection, stopwords):
-    """Insert stopwords into database"""
+def sync_stopwords(connection, stopwords, batch_size=None):
+    """Insert stopwords into database with optional batch processing"""
     cursor = connection.cursor()
     
     try:
@@ -75,21 +75,65 @@ def sync_stopwords(connection, stopwords):
         existing = set(row[0].lower() for row in cursor.fetchall())
         print(f"📊 Found {len(existing)} existing stopwords in database")
         
-        # Filter new stopwords
-        new_stopwords = [sw for sw in stopwords if sw.lower() not in existing]
+        # Get negative keywords to avoid duplicates
+        cursor.execute("SELECT Word FROM NegativeKeywords WHERE IsActive = 1")
+        negative_keywords = set(row[0].lower() for row in cursor.fetchall())
+        print(f"🚫 Found {len(negative_keywords)} active negative keywords")
+        
+        # Load previously removed stopwords to avoid re-adding them
+        removed_stopwords = set()
+        try:
+            import json
+            with open('nonstandard_stopwords_report.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if 'all' in data:
+                    removed_stopwords = set(word.lower() for word in data['all'])
+                print(f"🗑️ Found {len(removed_stopwords)} previously removed stopwords")
+        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+            print("ℹ️ No removed stopwords file found, proceeding without it")
+        
+        # Filter new stopwords: not in existing AND not in negative keywords AND not previously removed
+        new_stopwords = [sw for sw in stopwords if sw.lower() not in existing and sw.lower() not in negative_keywords and sw.lower() not in removed_stopwords]
         
         if not new_stopwords:
-            print("✨ All stopwords are already in database!")
+            print("✨ All valid stopwords are already in database!")
             return
         
-        print(f"📝 Inserting {len(new_stopwords)} new stopwords...")
+        total_to_insert = len(new_stopwords)
+        print(f"📝 Found {total_to_insert} new stopwords to insert")
         
-        # Insert new stopwords
-        insert_query = "INSERT IGNORE INTO Stopwords (StopwordText) VALUES (%s)"
-        cursor.executemany(insert_query, [(sw,) for sw in new_stopwords])
-        connection.commit()
-        
-        print(f"✅ Successfully inserted {cursor.rowcount} stopwords")
+        if batch_size and total_to_insert > batch_size:
+            print(f"🔄 Using batch processing with size {batch_size}")
+            inserted_count = 0
+            
+            for i in range(0, total_to_insert, batch_size):
+                batch = new_stopwords[i:i + batch_size]
+                print(f"📦 Processing batch {i//batch_size + 1}/{(total_to_insert + batch_size - 1)//batch_size} ({len(batch)} words)...")
+                
+                # Insert batch
+                insert_query = "INSERT IGNORE INTO Stopwords (StopwordText) VALUES (%s)"
+                cursor.executemany(insert_query, [(sw,) for sw in batch])
+                connection.commit()
+                
+                batch_inserted = cursor.rowcount
+                inserted_count += batch_inserted
+                print(f"   ✅ Inserted {batch_inserted} stopwords in this batch")
+                
+                # Optional: Add delay between batches to avoid overwhelming the database
+                if i + batch_size < total_to_insert:
+                    import time
+                    time.sleep(0.1)  # 100ms delay
+            
+            print(f"✅ Successfully inserted {inserted_count} stopwords in total")
+        else:
+            print(f"📝 Inserting {total_to_insert} new stopwords (excluding duplicates with negative keywords and previously removed words)...")
+            
+            # Insert all new stopwords at once
+            insert_query = "INSERT IGNORE INTO Stopwords (StopwordText) VALUES (%s)"
+            cursor.executemany(insert_query, [(sw,) for sw in new_stopwords])
+            connection.commit()
+            
+            print(f"✅ Successfully inserted {cursor.rowcount} stopwords")
         
         # Show summary
         cursor.execute("SELECT COUNT(*) FROM Stopwords")
