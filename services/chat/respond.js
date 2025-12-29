@@ -365,54 +365,87 @@ module.exports = (pool) => async (req, res) => {
         }
     }
 
-    // 4. Negation Handling
+    // -------------------------------------------------------------
+    // 4. Negation Handling (Revised & Fixed)
+    // -------------------------------------------------------------
     const originalTokens = simpleTokenize(message);
     const negationAnalysis = analyzeQueryNegation(originalTokens, queryTokens);
     const blockedDomainsFromSession = loadBlockedDomains(req);
     const blockedKeywordsFromSession = loadBlockedKeywords(req);
 
+    // 4.1 Check if user types a keyword that is ALREADY blocked
     if (blockedKeywordsFromSession.size > 0) {
       const msgLowerForBlock = message.toLowerCase().trim();
       let matchedBlockedKeyword = null;
+      // Check for exact match or inclusion
       for (const blocked of blockedKeywordsFromSession) {
-        if (msgLowerForBlock === blocked) { matchedBlockedKeyword = blocked; break; }
+        if (msgLowerForBlock.includes(blocked)) { 
+             matchedBlockedKeyword = blocked; 
+             break; 
+        }
       }
       if (matchedBlockedKeyword) {
-        return res.status(200).json({ success: true, found: false, message: `${BOT_PRONOUN}ได้ปิดเรื่อง "${matchedBlockedKeyword}" ไว้แล้วค่ะ`, blockedDomains: Array.from(blockedDomainsFromSession), blockedKeywords: Array.from(blockedKeywordsFromSession), blockedKeywordsDisplay: [matchedBlockedKeyword] });
+        return res.status(200).json({ 
+            success: true, 
+            found: false, 
+            message: `${BOT_PRONOUN}จำได้ว่าคุณไม่สนใจเรื่อง "${matchedBlockedKeyword}" แล้วค่ะ (หากเปลี่ยนใจสามารถพิมพ์ค้นหาใหม่ได้เลย)`, 
+            blockedDomains: Array.from(blockedDomainsFromSession), 
+            blockedKeywords: Array.from(blockedKeywordsFromSession), 
+            blockedKeywordsDisplay: [matchedBlockedKeyword] 
+        });
       }
     }
 
-    const negMap = getNegativeKeywordsMap && getNegativeKeywordsMap();
+    // 4.2 Dynamic Negative Keyword Detection
+    // Force fetch the latest map from the module to ensure data is loaded
+    const negMap = (NEG_KW_MODULE.getNegativeKeywordsMap && NEG_KW_MODULE.getNegativeKeywordsMap()) || {};
     const negationWordsSet = new Set();
     if (negMap) Object.keys(negMap).forEach(w => { if (w.trim()) negationWordsSet.add(w.trim().toLowerCase()); });
 
     let hasNegationTrigger = false;
+    let explicitNegationFound = false; // Flag for exact rejection phrase like "ไม่เอา"
     const negatedKeywordsFromMessage = [];
     const negatedKeywordsDisplayMap = new Map();
+    
+    // Sort prefixes by length (Longest first) to catch "ไม่เอา" before "ไม่"
     const negationPrefixes = Array.from(negationWordsSet).sort((a, b) => b.length - a.length);
-    const msgLower = message.toLowerCase();
+    const msgLower = message.toLowerCase().trim();
     
     for (const prefix of negationPrefixes) {
       const prefixIdx = msgLower.indexOf(prefix);
       if (prefixIdx !== -1) {
         hasNegationTrigger = true;
+        
+        // Check what comes AFTER the negative word
         let afterPrefix = msgLower.slice(prefixIdx + prefix.length).trim();
+        
         if (afterPrefix.length > 0) {
-          let firstWord = afterPrefix.split(/[\s,.:;!?]+/)[0];
+          // If there is text after (e.g., "ไม่เอาทุน")
+          // Try to grab the first meaningful word
+          let firstWord = afterPrefix.split(/[\s,.:;!?]+/)[0]; // Simple split
+          
           if (firstWord && firstWord.length >= 2) {
              negatedKeywordsFromMessage.push(firstWord);
              negatedKeywordsDisplayMap.set(firstWord, firstWord);
           }
+        } else {
+            // Found a negative word BUT nothing followed it (e.g. User typed just "ไม่เอา")
+            // This counts as an explicit negation which should stop the search
+            explicitNegationFound = true;
         }
-        break;
+        // If we found a match, we can stop checking shorter prefixes
+        if (negatedKeywordsFromMessage.length > 0 || explicitNegationFound) break; 
       }
     }
 
+    // 4.3 Check Domain Negation (from AI analysis if available)
     const negatedDomains = [];
     if (negationAnalysis.hasNegation) {
       for (const n of negationAnalysis.negatedKeywords) {
         const negWord = String(n.negativeWord || '').toLowerCase();
-        if (!negationWordsSet.has(negWord)) continue;
+        // Only trust AI if the negative word is in our approved list
+        if (!negationWordsSet.has(negWord) && !hasNegationTrigger) continue;
+        
         hasNegationTrigger = true;
         let kw = String(n.keyword || '').toLowerCase();
         if (kw.length >= 2) {
@@ -427,12 +460,30 @@ module.exports = (pool) => async (req, res) => {
     const uniqueNegatedKeywords = [...new Set(negatedKeywordsFromMessage)].filter(k => k && k.length >= 2);
     let filteredNegatedKeywords = uniqueNegatedKeywords;
 
-    if (hasNegationTrigger && (filteredNegatedKeywords.length > 0 || negatedDomains.length > 0)) {
+    // 4.4 FINAL NEGATION DECISION
+    // If we found keywords to block OR user explicitly said "No" (explicitNegationFound)
+    if (hasNegationTrigger && (filteredNegatedKeywords.length > 0 || negatedDomains.length > 0 || explicitNegationFound)) {
+      
       if (filteredNegatedKeywords.length > 0) persistBlockedKeywords(req, filteredNegatedKeywords);
       if (negatedDomains.length > 0) persistBlockedDomains(req, negatedDomains);
       
-      const blockedNames = filteredNegatedKeywords.length > 0 ? filteredNegatedKeywords.join(', ') : 'หัวข้อที่คุณปฏิเสธ';
-      return res.status(200).json({ success: true, found: false, message: `รับทราบค่ะ จะไม่แนะนำ ${blockedNames} แล้วนะคะ`, blockedDomains: Array.from(loadBlockedDomains(req)), blockedKeywords: Array.from(loadBlockedKeywords(req)), blockedKeywordsDisplay: uniqueNegatedKeywords });
+      let replyMsg = '';
+      if (filteredNegatedKeywords.length > 0) {
+          const blockedNames = filteredNegatedKeywords.join(', ');
+          replyMsg = `รับทราบค่ะ ${BOT_PRONOUN}จะไม่แสดงข้อมูลเกี่ยวกับ "${blockedNames}" แล้วนะคะ`;
+      } else {
+          // Case: User said "ไม่เอา" but didn't specify what.
+          replyMsg = `รับทราบค่ะ ${BOT_PRONOUN}ยกเลิกการค้นหาให้แล้วนะคะ หากต้องการสอบถามเรื่องอื่นพิมพ์มาได้เลยค่ะ`;
+      }
+
+      return res.status(200).json({ 
+          success: true, 
+          found: false, 
+          message: replyMsg,
+          blockedDomains: Array.from(loadBlockedDomains(req)), 
+          blockedKeywords: Array.from(loadBlockedKeywords(req)), 
+          blockedKeywordsDisplay: uniqueNegatedKeywords 
+      });
     }
 
     // 5. Ranking
