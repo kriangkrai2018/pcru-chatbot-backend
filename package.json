@@ -39,6 +39,7 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "@ljharb/tsconfig": "^0.3.2"
+    "@ljharb/tsconfig": "^0.3.2",
+    "concurrently": "^9.2.1"
   }
 }
