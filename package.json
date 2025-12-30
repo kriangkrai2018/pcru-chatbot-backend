@@ -5,6 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "bg:start": "nohup node server.js > ./server.log 2>&1 & echo $! > ./server.pid",
+    "stop:bg": "[ -f ./server.pid ] && (kill $(cat ./server.pid) && rm ./server.pid) || pkill -f 'node server.js' || true",
     "test": "echo \"Error: no test specified\" && exit 1",
     "eval:chat": "node scripts/eval_chat.js"
   },
