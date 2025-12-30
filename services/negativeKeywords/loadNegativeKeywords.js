@@ -33,14 +33,15 @@ const INLINE_NEGATION_PATTERNS = [
  * @param {Pool} pool - MySQL connection pool
  */
 async function loadNegativeKeywords(pool) {
+  let connection;
   try {
-    const connection = await pool.getConnection();
+    connection = await pool.getConnection();
+
     const [rows] = await connection.query(`
       SELECT Word, WeightModifier 
       FROM NegativeKeywords 
       WHERE IsActive = 1
     `);
-    connection.release();
 
     NEGATIVE_KEYWORDS_MAP = {};
     for (const row of rows) {
@@ -50,12 +51,44 @@ async function loadNegativeKeywords(pool) {
       }
     }
 
-    console.log(`✅ Loaded ${Object.keys(NEGATIVE_KEYWORDS_MAP).length} negative keywords`);
+    // Load ignored set and remove any ignored words from active map
+    const ignoredSet = await loadIgnoredNegativeKeywords(pool);
+    if (ignoredSet.size > 0) {
+      for (const ig of ignoredSet) {
+        if (NEGATIVE_KEYWORDS_MAP.hasOwnProperty(ig)) {
+          delete NEGATIVE_KEYWORDS_MAP[ig];
+        }
+      }
+    }
+
+    // Auto-populate standard inline patterns (but skip ignored words)
+    // Sort patterns by length desc to give precedence to longer phrases
+    const standardized = [...INLINE_NEGATION_PATTERNS].sort((a, b) => b.word.length - a.word.length);
+
+    for (const pattern of standardized) {
+      const w = String(pattern.word || '').toLowerCase().trim();
+      if (!w) continue;
+      if (ignoredSet.has(w)) continue; // user explicitly ignored this word
+      if (!NEGATIVE_KEYWORDS_MAP.hasOwnProperty(w)) {
+        try {
+          await connection.query(`INSERT INTO NegativeKeywords (Word, WeightModifier, IsActive) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE WeightModifier = VALUES(WeightModifier), IsActive = 1`, [w, parseFloat(pattern.modifier) || -1.0]);
+          NEGATIVE_KEYWORDS_MAP[w] = parseFloat(pattern.modifier) || -1.0;
+          console.log(`➕ Auto-added standard negative keyword: "${w}"`);
+        } catch (err) {
+          // non-fatal, skip
+          console.warn(`Auto-insert failed for negative word "${w}":`, err && err.message);
+        }
+      }
+    }
+
+    console.log(`✅ Loaded ${Object.keys(NEGATIVE_KEYWORDS_MAP).length} negative keywords (ignored: ${ignoredSet.size})`);
     return NEGATIVE_KEYWORDS_MAP;
   } catch (error) {
-    console.error('❌ Error loading negative keywords:', error.message);
+    console.error('❌ Error loading negative keywords:', error && (error.message || error));
     NEGATIVE_KEYWORDS_MAP = {};
     return {};
+  } finally {
+    if (connection) connection.release();
   }
 }
 
@@ -84,6 +117,61 @@ function isNegativeKeyword(word) {
 function getNegativeModifier(word) {
   const key = String(word || '').toLowerCase().trim();
   return NEGATIVE_KEYWORDS_MAP.hasOwnProperty(key) ? NEGATIVE_KEYWORDS_MAP[key] : null;
+}
+
+// ------------------------- New: Ignored words helpers -------------------------
+async function loadIgnoredNegativeKeywords(pool) {
+  try {
+    const conn = await pool.getConnection();
+    try {
+      const [rows] = await conn.query(`SELECT Word FROM NegativeKeywords_Ignored`);
+      const s = new Set((rows || []).map(r => String(r.Word || '').toLowerCase().trim()).filter(Boolean));
+      return s;
+    } finally {
+      conn.release();
+    }
+  } catch (err) {
+    // If the table doesn't exist yet or query fails, return empty set
+    return new Set();
+  }
+}
+
+async function addIgnoredNegativeKeyword(pool, word) {
+  try {
+    const w = String(word || '').toLowerCase().trim();
+    if (!w) return false;
+    const conn = await pool.getConnection();
+    try {
+      await conn.query(`INSERT IGNORE INTO NegativeKeywords_Ignored (Word) VALUES (?)`, [w]);
+      // Also deactivate in main NegativeKeywords table if present
+      await conn.query(`UPDATE NegativeKeywords SET IsActive = 0 WHERE LOWER(Word) = LOWER(?)`, [w]);
+      // Update in-memory cache
+      if (NEGATIVE_KEYWORDS_MAP.hasOwnProperty(w)) delete NEGATIVE_KEYWORDS_MAP[w];
+      return true;
+    } finally {
+      conn.release();
+    }
+  } catch (err) {
+    console.warn('addIgnoredNegativeKeyword failed', err && err.message);
+    return false;
+  }
+}
+
+async function removeIgnoredNegativeKeyword(pool, word) {
+  try {
+    const w = String(word || '').toLowerCase().trim();
+    if (!w) return false;
+    const conn = await pool.getConnection();
+    try {
+      await conn.query(`DELETE FROM NegativeKeywords_Ignored WHERE LOWER(Word) = LOWER(?)`, [w]);
+      return true;
+    } finally {
+      conn.release();
+    }
+  } catch (err) {
+    console.warn('removeIgnoredNegativeKeyword failed', err && err.message);
+    return false;
+  }
 }
 
 /**
@@ -368,6 +456,12 @@ module.exports = {
   detectBridgeIntent,
   simpleTokenize,
   clearNegativeKeywordsCache,
+
+  // New helpers for ignored negative keywords
+  loadIgnoredNegativeKeywords,
+  addIgnoredNegativeKeyword,
+  removeIgnoredNegativeKeyword,
+
   LOOK_BACKWARD_WINDOW,
   INLINE_NEGATION_PATTERNS
 };

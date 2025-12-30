@@ -6,6 +6,7 @@
 
 const express = require('express');
 const { clearNegativeKeywordsCache } = require('../services/negativeKeywords/loadNegativeKeywords');
+const manageNegativeService = require('../services/managenegativekeywords');
 
 module.exports = function(pool) {
   const router = express.Router();
@@ -280,40 +281,55 @@ module.exports = function(pool) {
 
   /**
    * DELETE /negativekeywords/:id
-   * ลบคำปฏิเสธ
+   * ลบคำปฏิเสธ (ปลอดภัย): ย้ายคำไปยัง Ignored/Blacklist เพื่อป้องกัน Auto-add คืน
    */
   router.delete('/:id', async (req, res) => {
     try {
       const { id } = req.params;
       console.log('🗑️ DELETE request for ID:', id);
 
-      const [existing] = await pool.query(
-        'SELECT Word FROM NegativeKeywords WHERE NegativeKeywordID = ?',
-        [id]
-      );
+      // Use manageNegativeService to perform a safe deletion + mark ignored
+      const result = await manageNegativeService.deleteNegativeKeywordSafe(pool, id);
 
-      if (existing.length === 0) {
-        console.log('❌ Keyword not found:', id);
-        return res.status(404).json({ ok: false, message: 'ไม่พบคำปฏิเสธที่ต้องการลบ' });
+      if (!result || !result.ok) {
+        console.log('❌ Delete failed or not found:', id, result && result.message);
+        return res.status(404).json({ ok: false, message: result && result.message ? result.message : 'ไม่พบคำปฏิเสธที่ต้องการลบ' });
       }
 
-      const word = existing[0].Word;
-      console.log('🗑️ Deleting word:', word);
-      
-      await pool.query('DELETE FROM NegativeKeywords WHERE NegativeKeywordID = ?', [id]);
-      console.log('✅ Deleted from DB:', word);
-      
-      // Clear cache and reload from database
-      await clearNegativeKeywordsCache(pool);
-      console.log('✅ Cache cleared and reloaded');
+      console.log('🗑️ Safely deleted and ignored:', result.word);
 
       res.json({
         ok: true,
-        message: `ลบคำปฏิเสธ "${word}" สำเร็จ`
+        message: `ลบคำปฏิเสธ "${result.word}" สำเร็จ`,
+        data: result
       });
     } catch (error) {
       console.error('❌ Delete negative keyword error:', error);
       res.status(500).json({ ok: false, message: error.message });
+    }
+  });
+
+  /**
+   * POST /negativekeywords/delete
+   * Safe delete by word: removes from active and marks as ignored (prevents auto-populate)
+   */
+  router.post('/delete', async (req, res) => {
+    try {
+      const { word } = req.body;
+
+      if (!word || !String(word).trim()) {
+        return res.status(400).json({ ok: false, message: 'กรุณาระบุคำที่จะลบ' });
+      }
+
+      const result = await manageNegativeService.deleteNegativeKeywordSafe(pool, word);
+      if (!result || !result.ok) {
+        return res.status(404).json({ ok: false, message: result && result.message ? result.message : 'ไม่พบคำปฏิเสธที่ต้องการลบ' });
+      }
+
+      res.json({ ok: true, message: `ลบคำปฏิเสธ "${result.word}" สำเร็จ`, data: result });
+    } catch (error) {
+      console.error('❌ Safe delete by word failed:', error && error.message);
+      res.status(500).json({ ok: false, message: 'เกิดข้อผิดพลาดในการลบคำ' });
     }
   });
 

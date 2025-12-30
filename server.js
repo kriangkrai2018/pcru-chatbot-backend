@@ -570,7 +570,10 @@ app.delete('/stopwords/:id', authenticateToken, async (req, res) => {
 
 // --- Negative Keywords CRUD Management ---
 const negativeKeywordsCrudRoutes = require('./routes/negativeKeywordsCrud');
+const negativeKeywordsApi = require('./routes/negativeKeywords');
 app.use('/negativekeywords', authenticateToken, negativeKeywordsCrudRoutes(pool));
+// Optional: expose an API-friendly path (example: /api/negative-keywords) for integrations
+app.use('/api/negative-keywords', authenticateToken, negativeKeywordsApi(pool));
 
 // --- Admin Keyword Management ---
 const adminRoutes = require('./routes/admin');
