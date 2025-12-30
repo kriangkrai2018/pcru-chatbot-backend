@@ -569,11 +569,14 @@ app.delete('/stopwords/:id', authenticateToken, async (req, res) => {
 });
 
 // --- Negative Keywords CRUD Management ---
+// Mount full-featured router for negative keywords management
+const negativeKeywordsRouter = require('./routes/negativeKeywords');
+app.use('/negativekeywords', authenticateToken, negativeKeywordsRouter);
+// Also keep the legacy CRUD factory-based routes mounted for backward compatibility under /negativekeywords/crud
 const negativeKeywordsCrudRoutes = require('./routes/negativeKeywordsCrud');
-const negativeKeywordsApi = require('./routes/negativeKeywords');
-app.use('/negativekeywords', authenticateToken, negativeKeywordsCrudRoutes(pool));
-// Optional: expose an API-friendly path (example: /api/negative-keywords) for integrations
-app.use('/api/negative-keywords', authenticateToken, negativeKeywordsApi(pool));
+app.use('/negativekeywords/crud', authenticateToken, negativeKeywordsCrudRoutes(pool));
+// Optional API-friendly path
+app.use('/api/negative-keywords', authenticateToken, negativeKeywordsRouter);
 
 // --- Admin Keyword Management ---
 const adminRoutes = require('./routes/admin');
