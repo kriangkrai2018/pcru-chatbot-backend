@@ -3189,3 +3189,754 @@ INFO:     127.0.0.1:49634 - "POST /tokenize HTTP/1.1" 200 OK
 ✅ New WebSocket client connected on /ws/feedbacks
 📊 getFeedbacks: returning 98 feedbacks
 ✅ New WebSocket client connected on /ws/feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+✅ New WebSocket client connected on /ws/feedbacks
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 98 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 98 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+✅ New WebSocket client connected on /ws/feedbacks
+✅ New WebSocket client connected on /ws/feedbacks
+📊 getFeedbacks: returning 98 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+✅ New WebSocket client connected on /ws/feedbacks
+✅ New WebSocket client connected on /ws/feedbacks
+📊 getFeedbacks: returning 98 feedbacks
+[req] OPTIONS /categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /stopwords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /ai-image/active [NO_AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] OPTIONS /ai-image/bot-pronoun [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+✅ New WebSocket client connected on /ws/feedbacks
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 98 feedbacks
+[req] OPTIONS /questionsanswers/categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /questionsanswers/categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /questionsanswers/categories (matched prefix: /questionsanswers)
+[req] OPTIONS /questionsanswers [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /questionsanswers [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /questionsanswers (matched prefix: /questionsanswers)
+🔍 getQuestionsAnswers called for officerId: 3020 role: Officer raw user: {
+  userId: 3020,
+  usertype: 'Officer',
+  role: 'Officer',
+  iat: 1767130191,
+  exp: 1767133791
+}
+✅ Got database connection
+📝 Fetching questions for officer: 3020
+✅ Found 22 questions
+🔍 Fetching keywords for question: 73
+🔍 Fetching keywords for question: 71
+🔍 Fetching keywords for question: 70
+🔍 Fetching keywords for question: 62
+🔍 Fetching keywords for question: 61
+🔍 Fetching keywords for question: 60
+🔍 Fetching keywords for question: 59
+🔍 Fetching keywords for question: 58
+🔍 Fetching keywords for question: 57
+🔍 Fetching keywords for question: 56
+🔍 Fetching keywords for question: 55
+🔍 Fetching keywords for question: 54
+🔍 Fetching keywords for question: 53
+🔍 Fetching keywords for question: 52
+🔍 Fetching keywords for question: 51
+🔍 Fetching keywords for question: 50
+🔍 Fetching keywords for question: 49
+🔍 Fetching keywords for question: 48
+🔍 Fetching keywords for question: 47
+🔍 Fetching keywords for question: 46
+🔍 Fetching keywords for question: 45
+🔍 Fetching keywords for question: 44
+✅ Found 11 keywords for question 73
+🔍 Fetching feedback counts for question: 73
+✅ Found 9 keywords for question 71
+🔍 Fetching feedback counts for question: 71
+✅ Found 6 keywords for question 70
+🔍 Fetching feedback counts for question: 70
+✅ Found 12 keywords for question 62
+🔍 Fetching feedback counts for question: 62
+✅ Found 5 keywords for question 61
+🔍 Fetching feedback counts for question: 61
+✅ Found 6 keywords for question 60
+🔍 Fetching feedback counts for question: 60
+✅ Found 5 keywords for question 59
+🔍 Fetching feedback counts for question: 59
+✅ Found 4 keywords for question 58
+🔍 Fetching feedback counts for question: 58
+✅ Found 5 keywords for question 57
+🔍 Fetching feedback counts for question: 57
+✅ Found 8 keywords for question 56
+🔍 Fetching feedback counts for question: 56
+✅ Found 7 keywords for question 55
+🔍 Fetching feedback counts for question: 55
+✅ Found 7 keywords for question 54
+🔍 Fetching feedback counts for question: 54
+✅ Found 5 keywords for question 53
+🔍 Fetching feedback counts for question: 53
+✅ Found 8 keywords for question 52
+🔍 Fetching feedback counts for question: 52
+✅ Found 7 keywords for question 51
+🔍 Fetching feedback counts for question: 51
+✅ Found 7 keywords for question 50
+🔍 Fetching feedback counts for question: 50
+✅ Found 6 keywords for question 49
+🔍 Fetching feedback counts for question: 49
+✅ Found 7 keywords for question 48
+🔍 Fetching feedback counts for question: 48
+✅ Found 5 keywords for question 47
+🔍 Fetching feedback counts for question: 47
+✅ Found 5 keywords for question 46
+🔍 Fetching feedback counts for question: 46
+✅ Found 5 keywords for question 45
+🔍 Fetching feedback counts for question: 45
+✅ Found 4 keywords for question 44
+🔍 Fetching feedback counts for question: 44
+✅ Found 2 likes and 0 unlikes for question 73
+✅ Found 1 likes and 0 unlikes for question 71
+✅ Found 0 likes and 0 unlikes for question 70
+✅ Found 2 likes and 0 unlikes for question 62
+✅ Found 0 likes and 0 unlikes for question 61
+✅ Found 0 likes and 0 unlikes for question 60
+✅ Found 0 likes and 0 unlikes for question 59
+✅ Found 0 likes and 0 unlikes for question 58
+✅ Found 0 likes and 0 unlikes for question 57
+✅ Found 0 likes and 0 unlikes for question 56
+✅ Found 1 likes and 0 unlikes for question 55
+✅ Found 1 likes and 0 unlikes for question 54
+✅ Found 0 likes and 0 unlikes for question 53
+✅ Found 0 likes and 0 unlikes for question 52
+✅ Found 0 likes and 0 unlikes for question 51
+✅ Found 5 likes and 0 unlikes for question 50
+✅ Found 0 likes and 0 unlikes for question 49
+✅ Found 0 likes and 0 unlikes for question 48
+✅ Found 3 likes and 0 unlikes for question 47
+✅ Found 0 likes and 0 unlikes for question 46
+✅ Found 0 likes and 0 unlikes for question 45
+✅ Found 0 likes and 0 unlikes for question 44
+✅ Sending response with 22 questions
+🔄 Releasing connection
+[req] OPTIONS /questionsanswers/categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /questionsanswers/categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /questionsanswers/categories (matched prefix: /questionsanswers)
+[req] OPTIONS /questionsanswers [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /questionsanswers [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /questionsanswers (matched prefix: /questionsanswers)
+🔍 getQuestionsAnswers called for officerId: 3020 role: Officer raw user: {
+  userId: 3020,
+  usertype: 'Officer',
+  role: 'Officer',
+  iat: 1767130191,
+  exp: 1767133791
+}
+✅ Got database connection
+📝 Fetching questions for officer: 3020
+✅ Found 22 questions
+🔍 Fetching keywords for question: 73
+🔍 Fetching keywords for question: 71
+🔍 Fetching keywords for question: 70
+🔍 Fetching keywords for question: 62
+🔍 Fetching keywords for question: 61
+🔍 Fetching keywords for question: 60
+🔍 Fetching keywords for question: 59
+🔍 Fetching keywords for question: 58
+🔍 Fetching keywords for question: 57
+🔍 Fetching keywords for question: 56
+🔍 Fetching keywords for question: 55
+🔍 Fetching keywords for question: 54
+🔍 Fetching keywords for question: 53
+🔍 Fetching keywords for question: 52
+🔍 Fetching keywords for question: 51
+🔍 Fetching keywords for question: 50
+🔍 Fetching keywords for question: 49
+🔍 Fetching keywords for question: 48
+🔍 Fetching keywords for question: 47
+🔍 Fetching keywords for question: 46
+🔍 Fetching keywords for question: 45
+🔍 Fetching keywords for question: 44
+✅ Found 11 keywords for question 73
+🔍 Fetching feedback counts for question: 73
+✅ Found 9 keywords for question 71
+🔍 Fetching feedback counts for question: 71
+✅ Found 6 keywords for question 70
+🔍 Fetching feedback counts for question: 70
+✅ Found 12 keywords for question 62
+🔍 Fetching feedback counts for question: 62
+✅ Found 5 keywords for question 61
+🔍 Fetching feedback counts for question: 61
+✅ Found 6 keywords for question 60
+🔍 Fetching feedback counts for question: 60
+✅ Found 5 keywords for question 59
+🔍 Fetching feedback counts for question: 59
+✅ Found 4 keywords for question 58
+🔍 Fetching feedback counts for question: 58
+✅ Found 5 keywords for question 57
+🔍 Fetching feedback counts for question: 57
+✅ Found 8 keywords for question 56
+🔍 Fetching feedback counts for question: 56
+✅ Found 7 keywords for question 55
+🔍 Fetching feedback counts for question: 55
+✅ Found 7 keywords for question 54
+🔍 Fetching feedback counts for question: 54
+✅ Found 5 keywords for question 53
+🔍 Fetching feedback counts for question: 53
+✅ Found 8 keywords for question 52
+🔍 Fetching feedback counts for question: 52
+✅ Found 7 keywords for question 51
+🔍 Fetching feedback counts for question: 51
+✅ Found 7 keywords for question 50
+🔍 Fetching feedback counts for question: 50
+✅ Found 6 keywords for question 49
+🔍 Fetching feedback counts for question: 49
+✅ Found 7 keywords for question 48
+🔍 Fetching feedback counts for question: 48
+✅ Found 5 keywords for question 47
+🔍 Fetching feedback counts for question: 47
+✅ Found 5 keywords for question 46
+🔍 Fetching feedback counts for question: 46
+✅ Found 5 keywords for question 45
+🔍 Fetching feedback counts for question: 45
+✅ Found 4 keywords for question 44
+🔍 Fetching feedback counts for question: 44
+✅ Found 2 likes and 0 unlikes for question 73
+✅ Found 1 likes and 0 unlikes for question 71
+✅ Found 0 likes and 0 unlikes for question 70
+✅ Found 2 likes and 0 unlikes for question 62
+✅ Found 0 likes and 0 unlikes for question 61
+✅ Found 0 likes and 0 unlikes for question 60
+✅ Found 0 likes and 0 unlikes for question 59
+✅ Found 0 likes and 0 unlikes for question 58
+✅ Found 0 likes and 0 unlikes for question 57
+✅ Found 0 likes and 0 unlikes for question 56
+✅ Found 1 likes and 0 unlikes for question 55
+✅ Found 1 likes and 0 unlikes for question 54
+✅ Found 0 likes and 0 unlikes for question 53
+✅ Found 0 likes and 0 unlikes for question 52
+✅ Found 0 likes and 0 unlikes for question 51
+✅ Found 5 likes and 0 unlikes for question 50
+✅ Found 0 likes and 0 unlikes for question 49
+✅ Found 0 likes and 0 unlikes for question 48
+✅ Found 3 likes and 0 unlikes for question 47
+✅ Found 0 likes and 0 unlikes for question 46
+✅ Found 0 likes and 0 unlikes for question 45
+✅ Found 0 likes and 0 unlikes for question 44
+✅ Sending response with 22 questions
+🔄 Releasing connection
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+✅ New WebSocket client connected on /ws/feedbacks
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 98 feedbacks
+[req] OPTIONS /chat/respond [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] POST /chat/respond [AUTH] origin=http://project.3bbddns.com:36144
+✅ Loaded 21 negative keywords (ignored: 7)
+🔄 Loading stopwords from database...
+  🛡️ Excluded keyword: "ของ"
+  🛡️ Excluded keyword: "เคย"
+  🛡️ Excluded keyword: "เวลา"
+  🛡️ Excluded keyword: "ไป"
+🛡️ Auto-whitelist: excluded 4 keyword(s) from stopwords (based on Keywords table)
+📝 Loaded 114 stopwords from database
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+--- DEBUG NEGATION ---
+User Message: ทุนความสามารถพิเศษ
+Loaded Negative Words: 21
+------------------------------------------------
+Incoming Message Raw: ทุนความสามารถพิเศษ
+------------------------------------------------
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49902 - "POST /tokenize HTTP/1.1" 200 OK
+🔒 Enforcing strict filter for term: "ทุนความสามารถพิเศษ"
+[req] POST /chat/respond [AUTH] origin=http://project.3bbddns.com:36144
+✅ Loaded 21 negative keywords (ignored: 7)
+[req] OPTIONS /chat/logs/has-answer [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] POST /chat/logs/has-answer [AUTH] origin=http://project.3bbddns.com:36144
+✅ ChatLogHasAnswers created with ID: 366 for QA: 73
+📢 Broadcasting chat logs update to 2 clients: {
+  action: 'created',
+  type: 'has-answer',
+  chatLogId: 366,
+  userQuery: 'เกณฑ์และคุณสมบัติ "ทุนความสามารถพิเศษ" (ดนตรี/นาฏศิลป์/ศิลปะ)?',
+  status: 1,
+  questionsAnswersId: 73,
+  timestamp: '2025-12-30T21:43:52.872Z'
+}
+✅ Sent WebSocket message to 0 active clients (chat-logs)
+[req] OPTIONS /chat/feedback [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] POST /chat/feedback [AUTH] origin=http://project.3bbddns.com:36144
+🔔 Feedback CREATED - calling notifyFeedbackUpdate
+📢 Broadcasting feedback update to 2 clients: {
+  feedbackId: 365,
+  action: 'created',
+  chatLogId: 366,
+  feedbackValue: 1,
+  feedbackReason: null,
+  feedbackComment: null
+}
+✅ Sent WebSocket message to 2 active clients
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 99 feedbacks
+[req] POST /chat/feedback [AUTH] origin=http://project.3bbddns.com:36144
+🔔 Feedback UPDATED - calling notifyFeedbackUpdate
+📢 Broadcasting feedback update to 2 clients: {
+  feedbackId: 365,
+  action: 'updated',
+  chatLogId: 366,
+  feedbackValue: 0,
+  feedbackReason: 'wrong_answer',
+  feedbackComment: null
+}
+✅ Sent WebSocket message to 2 active clients
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 99 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 99 feedbacks
+[req] OPTIONS /questionsanswers/categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /questionsanswers/categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /questionsanswers/categories (matched prefix: /questionsanswers)
+[req] OPTIONS /questionsanswers [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /questionsanswers [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /questionsanswers (matched prefix: /questionsanswers)
+🔍 getQuestionsAnswers called for officerId: 3020 role: Officer raw user: {
+  userId: 3020,
+  usertype: 'Officer',
+  role: 'Officer',
+  iat: 1767130191,
+  exp: 1767133791
+}
+✅ Got database connection
+📝 Fetching questions for officer: 3020
+✅ Found 22 questions
+🔍 Fetching keywords for question: 73
+🔍 Fetching keywords for question: 71
+🔍 Fetching keywords for question: 70
+🔍 Fetching keywords for question: 62
+🔍 Fetching keywords for question: 61
+🔍 Fetching keywords for question: 60
+🔍 Fetching keywords for question: 59
+🔍 Fetching keywords for question: 58
+🔍 Fetching keywords for question: 57
+🔍 Fetching keywords for question: 56
+🔍 Fetching keywords for question: 55
+🔍 Fetching keywords for question: 54
+🔍 Fetching keywords for question: 53
+🔍 Fetching keywords for question: 52
+🔍 Fetching keywords for question: 51
+🔍 Fetching keywords for question: 50
+🔍 Fetching keywords for question: 49
+🔍 Fetching keywords for question: 48
+🔍 Fetching keywords for question: 47
+🔍 Fetching keywords for question: 46
+🔍 Fetching keywords for question: 45
+🔍 Fetching keywords for question: 44
+✅ Found 11 keywords for question 73
+🔍 Fetching feedback counts for question: 73
+✅ Found 9 keywords for question 71
+🔍 Fetching feedback counts for question: 71
+✅ Found 6 keywords for question 70
+🔍 Fetching feedback counts for question: 70
+✅ Found 12 keywords for question 62
+🔍 Fetching feedback counts for question: 62
+✅ Found 5 keywords for question 61
+🔍 Fetching feedback counts for question: 61
+✅ Found 6 keywords for question 60
+🔍 Fetching feedback counts for question: 60
+✅ Found 5 keywords for question 59
+🔍 Fetching feedback counts for question: 59
+✅ Found 4 keywords for question 58
+🔍 Fetching feedback counts for question: 58
+✅ Found 5 keywords for question 57
+🔍 Fetching feedback counts for question: 57
+✅ Found 8 keywords for question 56
+🔍 Fetching feedback counts for question: 56
+✅ Found 7 keywords for question 55
+🔍 Fetching feedback counts for question: 55
+✅ Found 7 keywords for question 54
+🔍 Fetching feedback counts for question: 54
+✅ Found 5 keywords for question 53
+🔍 Fetching feedback counts for question: 53
+✅ Found 8 keywords for question 52
+🔍 Fetching feedback counts for question: 52
+✅ Found 7 keywords for question 51
+🔍 Fetching feedback counts for question: 51
+✅ Found 7 keywords for question 50
+🔍 Fetching feedback counts for question: 50
+✅ Found 6 keywords for question 49
+🔍 Fetching feedback counts for question: 49
+✅ Found 7 keywords for question 48
+🔍 Fetching feedback counts for question: 48
+✅ Found 5 keywords for question 47
+🔍 Fetching feedback counts for question: 47
+✅ Found 5 keywords for question 46
+🔍 Fetching feedback counts for question: 46
+✅ Found 5 keywords for question 45
+🔍 Fetching feedback counts for question: 45
+✅ Found 4 keywords for question 44
+🔍 Fetching feedback counts for question: 44
+✅ Found 2 likes and 1 unlikes for question 73
+✅ Found 1 likes and 0 unlikes for question 71
+✅ Found 0 likes and 0 unlikes for question 70
+✅ Found 2 likes and 0 unlikes for question 62
+✅ Found 0 likes and 0 unlikes for question 61
+✅ Found 0 likes and 0 unlikes for question 60
+✅ Found 0 likes and 0 unlikes for question 59
+✅ Found 0 likes and 0 unlikes for question 58
+✅ Found 0 likes and 0 unlikes for question 57
+✅ Found 0 likes and 0 unlikes for question 56
+✅ Found 1 likes and 0 unlikes for question 55
+✅ Found 1 likes and 0 unlikes for question 54
+✅ Found 0 likes and 0 unlikes for question 53
+✅ Found 0 likes and 0 unlikes for question 52
+✅ Found 0 likes and 0 unlikes for question 51
+✅ Found 5 likes and 0 unlikes for question 50
+✅ Found 0 likes and 0 unlikes for question 49
+✅ Found 0 likes and 0 unlikes for question 48
+✅ Found 3 likes and 0 unlikes for question 47
+✅ Found 0 likes and 0 unlikes for question 46
+✅ Found 0 likes and 0 unlikes for question 45
+✅ Found 0 likes and 0 unlikes for question 44
+✅ Sending response with 22 questions
+🔄 Releasing connection
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+✅ New WebSocket client connected on /ws/feedbacks
+📊 getFeedbacks: returning 99 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+✅ New WebSocket client connected on /ws/feedbacks
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 99 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+✅ New WebSocket client connected on /ws/feedbacks
+✅ New WebSocket client connected on /ws/feedbacks
+📊 getFeedbacks: returning 99 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+✅ New WebSocket client connected on /ws/feedbacks
+📊 getFeedbacks: returning 99 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+✅ New WebSocket client connected on /ws/feedbacks
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 99 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+✅ New WebSocket client connected on /ws/feedbacks
+📊 getFeedbacks: returning 99 feedbacks
+✅ New WebSocket client connected on /ws/feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+✅ New WebSocket client connected on /ws/feedbacks
+✅ New WebSocket client connected on /ws/feedbacks
+[req] OPTIONS /feedbacks [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /feedbacks [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /feedbacks (matched prefix: /feedbacks)
+📊 getFeedbacks: returning 99 feedbacks
+❌ WebSocket client disconnected
+❌ WebSocket client disconnected
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[req] OPTIONS /synonyms [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /synonyms/stats [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /synonyms [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /synonyms (matched prefix: /synonyms)
+[req] GET /synonyms/stats [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /synonyms/stats (matched prefix: /synonyms)
+[req] OPTIONS /chat/feedback [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] POST /chat/feedback [NO_AUTH] origin=http://project.3bbddns.com:36144
+🔔 Feedback UPDATED - calling notifyFeedbackUpdate
+📢 Broadcasting feedback update to 0 clients: {
+  feedbackId: 365,
+  action: 'updated',
+  chatLogId: 366,
+  feedbackValue: 1,
+  feedbackReason: null,
+  feedbackComment: null
+}
+✅ Sent WebSocket message to 0 active clients
+[req] POST /chat/feedback [NO_AUTH] origin=http://project.3bbddns.com:36144
+🔔 Feedback UPDATED - calling notifyFeedbackUpdate
+📢 Broadcasting feedback update to 0 clients: {
+  feedbackId: 365,
+  action: 'updated',
+  chatLogId: 366,
+  feedbackValue: 1,
+  feedbackReason: null,
+  feedbackComment: null
+}
+✅ Sent WebSocket message to 0 active clients
