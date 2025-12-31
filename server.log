@@ -5336,3 +5336,390 @@ Login Successful (fallback) for officer: นางสาวทะเบียน
   feedbackComment: null
 }
 ✅ Sent WebSocket message to 0 active clients
+[req] OPTIONS /categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /stopwords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[req] OPTIONS /ai-image/active [NO_AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[req] OPTIONS /ai-image/bot-pronoun [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
+[req] OPTIONS /categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /stopwords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] OPTIONS /ai-image/active [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] OPTIONS /ai-image/bot-pronoun [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
+[req] OPTIONS /categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /stopwords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /ai-image/active [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] OPTIONS /ai-image/bot-pronoun [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
+[req] OPTIONS /categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /stopwords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /ai-image/active [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] OPTIONS /ai-image/bot-pronoun [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
+[req] OPTIONS /categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /stopwords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /ai-image/active [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] OPTIONS /ai-image/bot-pronoun [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
+[req] OPTIONS /categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /stopwords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /ai-image/active [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] OPTIONS /ai-image/bot-pronoun [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
+[req] OPTIONS /categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /stopwords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /ai-image/active [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /ai-image/bot-pronoun [NO_AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
+[req] OPTIONS /categories [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /stopwords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /keywords/public [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] OPTIONS /ai-image/active [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /stopwords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[req] GET /keywords/public [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /stopwords/public (matched prefix: /stopwords)
+[req] GET /ai-image/active [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /keywords/public (matched prefix: /keywords)
+[spa-fallback] Skipping SPA fallback for path: /ai-image/active (matched prefix: /ai-image)
+[req] OPTIONS /ai-image/bot-pronoun [NO_AUTH] origin=http://project.3bbddns.com:36144
+[req] GET /ai-image/bot-pronoun [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /ai-image/bot-pronoun (matched prefix: /ai-image)
+[req] GET /categories [AUTH] origin=http://project.3bbddns.com:36144
+[spa-fallback] Skipping SPA fallback for path: /categories (matched prefix: /categories)
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[getCategoriesPublic] sample: [
+  { CategoriesID: '3-3', Contact: '' },
+  { CategoriesID: '1', Contact: '' },
+  { CategoriesID: '5-5', Contact: '' },
+  { CategoriesID: '3-1', Contact: '' },
+  { CategoriesID: '5-6', Contact: '' }
+]
+[req] GET /uploads/ai-images/ai-1765817621202-292127745.jpg [NO_AUTH] origin=
+[spa-fallback] Skipping SPA fallback for path: /uploads/ai-images/ai-1765817621202-292127745.jpg (matched prefix: /uploads)
