@@ -71,15 +71,56 @@ router.get('/suggestions/:qaId', async (req, res) => {
       }
     }
 
+    // --- NEW: also fetch stopwords that appear in the QA title or match keyword texts ---
+    const stopwordsMap = new Map();
+    try {
+      // Stopwords appearing in the question title
+      const [stopwordsInTitle] = await pool.query(
+        `SELECT StopwordID, StopwordText FROM Stopwords WHERE LOWER(?) LIKE CONCAT('%', LOWER(StopwordText), '%')`,
+        [qa.QuestionTitle || '']
+      );
+      for (const sw of stopwordsInTitle) {
+        const key = (sw.StopwordText || '').toLowerCase();
+        if (!stopwordsMap.has(key)) stopwordsMap.set(key, { id: sw.StopwordID, text: sw.StopwordText, source: ['title'] });
+        else stopwordsMap.get(key).source.push('title');
+      }
+
+      // Stopwords that match any keyword text
+      const keywordTextsLower = keywords.map(k => (k.KeywordText || '').toLowerCase()).filter(Boolean);
+      if (keywordTextsLower.length > 0) {
+        const placeholders = keywordTextsLower.map(() => '?').join(',');
+        const [stopwordsMatchingKeywords] = await pool.query(
+          `SELECT StopwordID, StopwordText FROM Stopwords WHERE LOWER(StopwordText) IN (${placeholders})`,
+          keywordTextsLower
+        );
+
+        for (const sw of stopwordsMatchingKeywords) {
+          const key = (sw.StopwordText || '').toLowerCase();
+          if (!stopwordsMap.has(key)) stopwordsMap.set(key, { id: sw.StopwordID, text: sw.StopwordText, source: ['keyword'] });
+          else if (!stopwordsMap.get(key).source.includes('keyword')) stopwordsMap.get(key).source.push('keyword');
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching related stopwords:', e && e.message);
+    }
+
+    const stopwords = Array.from(stopwordsMap.values()).map(s => ({ id: s.id, text: s.text, source: s.source }));
+
+    // Compose a friendly suggestion message including both outliers and stopwords
+    const suggestionsParts = [];
+    if (outlierKeywords.length > 0) suggestionsParts.push(`${outlierKeywords.length} outlier keyword${outlierKeywords.length > 1 ? 's' : ''}`);
+    if (stopwords.length > 0) suggestionsParts.push(`${stopwords.length} stopword${stopwords.length > 1 ? 's' : ''}`);
+    const composedSuggestion = suggestionsParts.length > 0 ? `Consider removing ${suggestionsParts.join(' and ')}` : 'No obvious issues detected';
+
     res.json({
       qaId,
       questionTitle: qa.QuestionTitle,
       totalKeywords: keywords.length,
       relatedKeywords,
       outlierKeywords,
-      suggestion: outlierKeywords.length > 0 ? 
-        `Consider removing ${outlierKeywords.length} outlier keywords` : 
-        'All keywords seem related'
+      stopwords,
+      totalStopwords: stopwords.length,
+      suggestion: composedSuggestion
     });
 
   } catch (error) {
