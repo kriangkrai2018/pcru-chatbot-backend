@@ -96,6 +96,16 @@ const loginService = (pool, transporter) => async (req, res) => {
         
         console.log(`Login Successful for user: ${userName} (ID: ${userId}), Role: ${usertype}`);
         
+        // Before creating token, enrich user object with OrgName if possible
+        try {
+            if (user && user.OrgID) {
+                const [orgRows] = await pool.query('SELECT OrgName FROM Organizations WHERE OrgID = ? LIMIT 1', [user.OrgID]);
+                if (orgRows && orgRows.length > 0) user.OrgName = orgRows[0].OrgName;
+            }
+        } catch (e) {
+            console.warn('Could not enrich user with OrgName:', e && (e.message || e));
+        }
+
         // 4. *** Create a unique and encrypted JWT Token ***
         const payload = {
             userId: userId,
