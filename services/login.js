@@ -161,8 +161,9 @@ const loginService = (pool, transporter) => async (req, res) => {
                 }
 
                 // Try Officers table (login by OfficerID)
+                // ✅ Added OrgID to SELECT so we can fetch OrgName
                 const [officers] = await pool.execute(
-                    'SELECT OfficerID, OfficerName, Email AS OfficerEmail, OfficerPassword FROM Officers WHERE OfficerID = ? AND OfficerPassword = ?',
+                    'SELECT OfficerID, OfficerName, Email AS OfficerEmail, OfficerPassword, OrgID FROM Officers WHERE OfficerID = ? AND OfficerPassword = ?',
                     [id, password]
                 );
                 if (officers && officers.length > 0) {
@@ -170,6 +171,16 @@ const loginService = (pool, transporter) => async (req, res) => {
                     const userId = user.OfficerID;
                     const userName = user.OfficerName;
                     const usertype = 'Officer';
+
+                    // ✅ Enrich with OrgName if OrgID exists (Fallback path)
+                    try {
+                        if (user.OrgID) {
+                            const [orgRows] = await pool.query('SELECT OrgName FROM Organizations WHERE OrgID = ? LIMIT 1', [user.OrgID]);
+                            if (orgRows && orgRows.length > 0) user.OrgName = orgRows[0].OrgName;
+                        }
+                    } catch (e) {
+                        console.warn('Could not enrich user with OrgName (fallback):', e && (e.message || e));
+                    }
 
                     const payload = { userId, usertype, role: usertype };
                     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
