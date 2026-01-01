@@ -639,8 +639,81 @@ router.get('/questionsanswers', async (req, res) => {
     return res.status(500).json({ success: false, message: 'Database pool not available' });
   }
   try {
-    const [rows] = await pool.query('SELECT qa.*, c.CategoriesName FROM QuestionsAnswers qa LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID WHERE qa.OfficerID = ? ORDER BY qa.QuestionsAnswersID DESC', [req.user.userId]);
-    res.status(200).json({ success: true, data: rows });
+    const officerId = req.user?.userId;
+    const userRole = req.user?.role;
+    
+    // Allow admins to see all questions, officers only see their own
+    const isAdmin = userRole === 'Super Admin' || userRole === 'Admin';
+    const targetOfficerId = isAdmin ? null : officerId;
+    
+    let query, params;
+    if (isAdmin) {
+      // Admin sees all questions
+      query = `SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.ReviewDate, qa.QuestionText, qa.OfficerID,
+          c.CategoriesName AS CategoriesID
+       FROM QuestionsAnswers qa
+       LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID
+       ORDER BY qa.QuestionsAnswersID DESC`;
+      params = [];
+    } else {
+      // Officer sees only their questions
+      query = `SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.ReviewDate, qa.QuestionText, qa.OfficerID,
+          c.CategoriesName AS CategoriesID
+       FROM QuestionsAnswers qa
+       LEFT JOIN Categories c ON qa.CategoriesID = c.CategoriesID
+       WHERE qa.OfficerID = ?
+       ORDER BY qa.QuestionsAnswersID DESC`;
+      params = [targetOfficerId];
+    }
+    
+    const [rows] = await pool.query(query, params);
+    
+    // Get keywords and feedback counts for each question
+    const questionsWithKeywords = await Promise.all(
+      rows.map(async (question) => {
+        try {
+          const [keywords] = await pool.query(
+            `SELECT k.KeywordID, k.KeywordText 
+             FROM Keywords k
+             INNER JOIN AnswersKeywords ak ON k.KeywordID = ak.KeywordID
+             WHERE ak.QuestionsAnswersID = ?`,
+            [question.QuestionsAnswersID]
+          );
+          
+          // Get like/unlike counts for this question
+          const [feedbackCounts] = await pool.query(
+            `SELECT 
+                SUM(CASE WHEN f.FeedbackValue = 1 THEN 1 ELSE 0 END) as likeCount,
+                SUM(CASE WHEN f.FeedbackValue = 0 THEN 1 ELSE 0 END) as unlikeCount
+             FROM Feedbacks f
+             INNER JOIN ChatLogHasAnswers c ON f.ChatLogID = c.ChatLogID
+             WHERE c.QuestionsAnswersID = ?`,
+            [question.QuestionsAnswersID]
+          );
+          
+          const likeCount = feedbackCounts[0]?.likeCount || 0;
+          const unlikeCount = feedbackCounts[0]?.unlikeCount || 0;
+          
+          return {
+            ...question,
+            keywords: keywords || [],
+            likeCount: likeCount,
+            unlikeCount: unlikeCount
+          };
+        } catch (keywordError) {
+          console.error('Error fetching keywords/feedback for question', question.QuestionsAnswersID, ':', keywordError.message);
+          // Return question without keywords if there's an error
+          return {
+            ...question,
+            keywords: [],
+            likeCount: 0,
+            unlikeCount: 0
+          };
+        }
+      })
+    );
+    
+    res.status(200).json({ success: true, data: questionsWithKeywords });
   } catch (err) {
     console.error('Get questionsanswers error:', err);
     res.status(500).json({ success: false, message: err.message });
