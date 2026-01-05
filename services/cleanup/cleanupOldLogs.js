@@ -1,10 +1,13 @@
 /**
  * cleanupOldLogs.js
- * ลบข้อมูล ChatLogHasAnswers, ChatLogNoAnswers, และ Feedbacks ที่เก่ากว่า 7 วัน
+ * ลบข้อมูล ChatLogHasAnswers, ChatLogNoAnswers, และ Feedbacks ที่เก่ากว่ากำหนด
+ * - ChatLogNoAnswers: เก็บ 30 วัน
+ * - ChatLogHasAnswers/Feedbacks: ตาม RETENTION_DAYS (default 30 วัน)
  * คำนวณจากวันที่จัดเก็บ (Timestamp/FeedbackDate)
  */
 
-const RETENTION_DAYS = parseInt(process.env.LOG_RETENTION_DAYS) || 7;
+const RETENTION_DAYS = parseInt(process.env.LOG_RETENTION_DAYS) || 30;
+const NO_ANSWER_RETENTION_DAYS = 30; // ChatLogNoAnswers เก็บแค่ 30 วัน
 
 /**
  * ลบ ChatLogHasAnswers ที่ไม่มี Feedback คู่กัน (orphaned records)
@@ -62,10 +65,10 @@ async function cleanupOldLogs(pool) {
     );
     results.hasAnswers = hasAnswersResult.affectedRows || 0;
 
-    // ลบ ChatLogNoAnswers ที่เก่ากว่า RETENTION_DAYS วัน
+    // ลบ ChatLogNoAnswers ที่เก่ากว่า 30 วัน (NO_ANSWER_RETENTION_DAYS)
     const [noAnswersResult] = await connection.query(
       `DELETE FROM ChatLogNoAnswers WHERE Timestamp < DATE_SUB(NOW(), INTERVAL ? DAY)`,
-      [RETENTION_DAYS]
+      [NO_ANSWER_RETENTION_DAYS]
     );
     results.noAnswers = noAnswersResult.affectedRows || 0;
 
@@ -91,4 +94,4 @@ async function cleanupOldLogs(pool) {
   return results;
 }
 
-module.exports = { cleanupOldLogs, cleanupOrphanedChatLogs, RETENTION_DAYS };
+module.exports = { cleanupOldLogs, cleanupOrphanedChatLogs, RETENTION_DAYS, NO_ANSWER_RETENTION_DAYS };
