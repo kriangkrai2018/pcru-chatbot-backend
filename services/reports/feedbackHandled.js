@@ -103,35 +103,66 @@ const getHandledFeedbacksService = (pool) => async (req, res) => {
 
 /**
  * Service to cleanup handled feedbacks older than 30 days
+ * Also deletes corresponding ChatLogHasAnswers records
  * @param {object} pool - MySQL connection pool
  * @returns {function} - Express middleware or direct call
  */
 const cleanupHandledFeedbacksService = (pool) => async (req, res) => {
+    let connection;
     try {
-        const [result] = await pool.query(
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Get ChatLogIDs of feedbacks to be deleted
+        const [feedbacksToDelete] = await connection.query(
+            `SELECT ChatLogID FROM Feedbacks 
+             WHERE HandledAt IS NOT NULL 
+             AND HandledAt < DATE_SUB(NOW(), INTERVAL 30 DAY)`
+        );
+        
+        const chatLogIds = feedbacksToDelete.map(f => f.ChatLogID).filter(Boolean);
+
+        // 2. Delete feedbacks
+        const [feedbackResult] = await connection.query(
             `DELETE FROM Feedbacks 
              WHERE HandledAt IS NOT NULL 
              AND HandledAt < DATE_SUB(NOW(), INTERVAL 30 DAY)`
         );
 
-        const message = `Cleaned up ${result.affectedRows} handled feedbacks older than 30 days`;
+        // 3. Delete corresponding ChatLogHasAnswers
+        let chatLogDeletedCount = 0;
+        if (chatLogIds.length > 0) {
+            const [chatLogResult] = await connection.query(
+                `DELETE FROM ChatLogHasAnswers WHERE ChatLogID IN (?)`,
+                [chatLogIds]
+            );
+            chatLogDeletedCount = chatLogResult.affectedRows || 0;
+        }
+
+        await connection.commit();
+
+        const message = `Cleaned up ${feedbackResult.affectedRows} handled feedbacks and ${chatLogDeletedCount} chat logs older than 30 days`;
         console.log(`🧹 ${message}`);
 
         if (res) {
             res.status(200).json({ 
                 success: true, 
                 message,
-                deletedCount: result.affectedRows 
+                deletedCount: feedbackResult.affectedRows,
+                chatLogsDeleted: chatLogDeletedCount
             });
         }
         
-        return result.affectedRows;
+        return feedbackResult.affectedRows;
     } catch (error) {
+        if (connection) await connection.rollback();
         console.error('❌ Error cleaning up handled feedbacks:', error);
         if (res) {
             res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
         throw error;
+    } finally {
+        if (connection) connection.release();
     }
 };
 
