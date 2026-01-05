@@ -29,7 +29,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const { spawn } = require('child_process');
 const cron = require('node-cron');
-const { cleanupOldLogs } = require('./services/cleanup/cleanupOldLogs');
+const { cleanupOldLogs, cleanupOrphanedChatLogs } = require('./services/cleanup/cleanupOldLogs');
 const { URL } = require('url');
 const fs = require('fs');
 
@@ -206,6 +206,18 @@ cron.schedule('0 3 * * *', async () => {
     }
   } catch (err) {
     console.error('❌ Daily cleanup failed:', err.message);
+  }
+});
+
+// Schedule frequent cleanup of orphaned ChatLogHasAnswers (runs every 5 minutes)
+// ChatLogHasAnswers ที่ไม่มี Feedback คู่กันจะถูกลบทันที
+cron.schedule('*/5 * * * *', async () => {
+  try {
+    if (global.__DB_POOL__) {
+      await cleanupOrphanedChatLogs(global.__DB_POOL__);
+    }
+  } catch (err) {
+    console.error('❌ Orphaned cleanup failed:', err.message);
   }
 });
 
