@@ -302,22 +302,26 @@ router.get('/seed/preview', async (req, res) => {
     const [existingRows] = await conn.query('SELECT Word FROM NegativeKeywords');
     const existingWords = new Set(existingRows.map(r => r.Word.toLowerCase()));
 
-    // Get ignored words
+    // Get ignored words (all deleted words, not just standard ones)
     const [ignoredRows] = await conn.query('SELECT Word FROM NegativeKeywords_Ignored');
-    const ignoredWords = new Set(ignoredRows.map(r => r.Word.toLowerCase()));
+    const ignoredWordsSet = new Set(ignoredRows.map(r => r.Word.toLowerCase()));
+    
+    // All ignored words as array for display (not just standard ones)
+    const allIgnoredWords = ignoredRows.map(r => ({ word: r.Word }));
 
-    // Filter out existing and ignored words
+    // Filter out existing and ignored words for toAdd (only standard keywords)
     const wordsToAdd = STANDARD_NEGATIVE_KEYWORDS.filter(item => 
       !existingWords.has(item.word.toLowerCase()) && 
-      !ignoredWords.has(item.word.toLowerCase())
+      !ignoredWordsSet.has(item.word.toLowerCase())
     );
 
     const alreadyExists = STANDARD_NEGATIVE_KEYWORDS.filter(item =>
       existingWords.has(item.word.toLowerCase())
     );
 
+    // Show only standard keywords that were deleted (for consistency with seed purpose)
     const ignored = STANDARD_NEGATIVE_KEYWORDS.filter(item =>
-      ignoredWords.has(item.word.toLowerCase())
+      ignoredWordsSet.has(item.word.toLowerCase())
     );
 
     res.json({
@@ -325,7 +329,7 @@ router.get('/seed/preview', async (req, res) => {
       data: {
         toAdd: wordsToAdd,
         alreadyExists: alreadyExists,
-        ignored: ignored,
+        ignored: allIgnoredWords,  // Show ALL deleted words, not just standard ones
         totalStandard: STANDARD_NEGATIVE_KEYWORDS.length
       }
     });
