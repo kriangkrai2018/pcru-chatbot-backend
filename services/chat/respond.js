@@ -869,9 +869,14 @@ module.exports = (pool) => async (req, res) => {
       ? `✨ พบ ${finalResults.length} คำถามที่ใกล้เคียง\n(ลองเลือกซักอันดูสิ 😊)`
       : `✨ นี่คือคำตอบที่คุณหา`;
 
+    // 🆕 Check if the top result was matched by keyword or by text/title only
+    const topResult = topRanked[0];
+    const keywordMatch = topResult && topResult.components && topResult.components.overlapCount > 0;
+
     return res.status(200).json({
       success: true,
       found: topRanked.length > 0,
+      keywordMatch: keywordMatch, // 🆕 true if matched by keyword, false if only by text/title
       title: topRanked.length > 0 ? topRanked[0].item.QuestionTitle : null, // 🆕 Add question title
       totalMatches: finalResults.length, // ✅ เพิ่ม totalMatches ส่งกลับไปเพื่อให้ Frontend ทำปุ่ม Read more
       limit: limit,
@@ -880,7 +885,7 @@ module.exports = (pool) => async (req, res) => {
       query: message,
       message: msgText,
       contacts: specificContacts,
-      alternatives: topRanked.map(r => ({ id: r.item.QuestionsAnswersID, title: r.item.QuestionTitle, preview: (r.item.QuestionText || '').slice(0, 200), text: r.item.QuestionText, score: r.score.toFixed(2), keywords: r.item.keywords, categories: r.item.CategoriesID || null, categoriesPDF: r.item.CategoriesPDF || null }))
+      alternatives: topRanked.map(r => ({ id: r.item.QuestionsAnswersID, title: r.item.QuestionTitle, preview: (r.item.QuestionText || '').slice(0, 200), text: r.item.QuestionText, score: r.score.toFixed(2), keywords: r.item.keywords, categories: r.item.CategoriesID || null, categoriesPDF: r.item.CategoriesPDF || null, keywordMatch: r.components && r.components.overlapCount > 0 }))
     });
   } catch (err) {
     console.error('API Error:', err);
