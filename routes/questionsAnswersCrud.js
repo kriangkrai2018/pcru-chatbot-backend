@@ -772,4 +772,46 @@ router.get('/questionsanswers', async (req, res) => {
   }
 });
 
+/**
+ * GET /questionsanswers/popular
+ * ดึงคำถามยอดนิยม (เรียงตามจำนวน like มากที่สุด)
+ */
+router.get('/popular', async (req, res) => {
+  const pool = req.pool;
+  if (!pool) {
+    return res.status(500).json({ success: false, message: 'Database pool not available' });
+  }
+
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    
+    // Query questions with most likes
+    const [rows] = await pool.query(`
+      SELECT 
+        q.QuestionsID,
+        q.QuestionTitle,
+        COUNT(f.FeedbackID) as likeCount
+      FROM QuestionsAnswers q
+      LEFT JOIN ChatLogs cl ON cl.QuestionID = q.QuestionsID
+      LEFT JOIN Feedbacks f ON f.ChatLogID = cl.ChatLogID AND f.FeedbackValue = 1
+      GROUP BY q.QuestionsID, q.QuestionTitle
+      HAVING likeCount > 0
+      ORDER BY likeCount DESC
+      LIMIT ?
+    `, [limit]);
+    
+    res.status(200).json({ 
+      success: true, 
+      data: rows.map(r => ({
+        id: r.QuestionsID,
+        title: r.QuestionTitle,
+        likeCount: r.likeCount
+      }))
+    });
+  } catch (err) {
+    console.error('Get popular questions error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

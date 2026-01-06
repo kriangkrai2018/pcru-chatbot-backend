@@ -673,10 +673,62 @@ app.use('/adminusers', authenticateToken, adminUsersCrudRoutes);
 
 // --- Keyword Synonyms CRUD (คำพ้อง/คำสนับสนุน) ---
 const synonymsCrudRoutes = require('./routes/synonymsCrud');
+
+// Public endpoint for synonyms list (chatbot help center - no auth required)
+// MUST be defined BEFORE the authenticated route to avoid auth middleware
+app.get('/synonyms/public', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT ks.InputWord, k.KeywordText AS TargetKeyword
+      FROM KeywordSynonyms ks
+      LEFT JOIN Keywords k ON ks.TargetKeywordID = k.KeywordID
+      WHERE ks.IsActive = 1
+      LIMIT 50
+    `);
+    res.status(200).json({ success: true, data: rows });
+  } catch (err) {
+    console.error('Get public synonyms error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Protected synonyms CRUD routes
 app.use('/synonyms', authenticateToken, synonymsCrudRoutes(pool));
 
 // --- QuestionsAnswers CRUD (เพิ่ม แก้ไข ลบ ง่ายๆ) ---
 const questionsAnswersCrudRoutes = require('./routes/questionsAnswersCrud');
+
+// Public endpoint for popular questions (no auth required)
+app.get('/questionsanswers/popular', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const [rows] = await pool.query(`
+      SELECT 
+        q.QuestionsAnswersID,
+        q.QuestionTitle,
+        COUNT(f.FeedbackID) as likeCount
+      FROM QuestionsAnswers q
+      LEFT JOIN ChatLogHasAnswers cl ON cl.QuestionsAnswersID = q.QuestionsAnswersID
+      LEFT JOIN Feedbacks f ON f.ChatLogID = cl.ChatLogID AND f.FeedbackValue = 1
+      GROUP BY q.QuestionsAnswersID, q.QuestionTitle
+      HAVING likeCount > 0
+      ORDER BY likeCount DESC
+      LIMIT ?
+    `, [limit]);
+    
+    res.status(200).json({ 
+      success: true, 
+      data: rows.map(r => ({
+        id: r.QuestionsAnswersID,
+        title: r.QuestionTitle,
+        likeCount: r.likeCount
+      }))
+    });
+  } catch (err) {
+    console.error('Get popular questions error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 // --- AI Image Management (Admin only) ---
 const aiImageRoutes = require('./routes/aiImageCrud');
