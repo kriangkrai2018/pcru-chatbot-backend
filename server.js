@@ -624,6 +624,23 @@ app.delete('/stopwords/:id', authenticateToken, async (req, res) => {
 });
 
 // --- Negative Keywords CRUD Management ---
+// Public endpoint for negative keywords list (chatbot help center - no auth required)
+app.get('/negativekeywords/public', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT KeywordText
+      FROM NegativeKeywords
+      WHERE IsActive = 1
+      ORDER BY KeywordText
+      LIMIT 50
+    `);
+    res.status(200).json({ success: true, data: rows });
+  } catch (err) {
+    console.error('Get public negative keywords error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Mount full-featured router for negative keywords management
 const negativeKeywordsRouter = require('./routes/negativeKeywords');
 app.use('/negativekeywords', authenticateToken, negativeKeywordsRouter);
