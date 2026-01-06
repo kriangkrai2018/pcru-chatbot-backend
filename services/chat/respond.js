@@ -804,6 +804,11 @@ module.exports = (pool) => async (req, res) => {
                   const bestScore = ranked[0].score;
                   if (bestScore > 5.0) {
                       finalResults = finalResults.filter(r => r.score >= (bestScore * 0.7));
+                  } else {
+                      // 🆕 FIX: ถ้าไม่มี keyword match และ bestScore ต่ำมาก (<=5.0) ให้ถือว่าไม่พบผลลัพธ์
+                      // ป้องกันการ return ทุก QA ในระบบเมื่อ user พิมพ์คำที่ไม่เกี่ยวข้อง เช่น "ไก่"
+                      console.log(`🚫 No keyword match & low score (${bestScore.toFixed(2)}): Clearing results`);
+                      finalResults = [];
                   }
              }
         }
