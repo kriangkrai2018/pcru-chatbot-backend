@@ -891,47 +891,50 @@ server.on('error', (err) => {
   console.error('❌ HTTP Server error:', err && (err.message || err));
 });
 
-server.listen(PORT, BIND_HOST, async () => {
-  // List non-internal, non-loopback IPv4 addresses for convenience when binding to 0.0.0.0
-  const os = require('os');
-  const nets = os.networkInterfaces();
-  const addrs = [];
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name]) {
-      if (net.family === 'IPv4' && !net.internal && !net.address.startsWith('127.')) {
-        addrs.push(net.address);
+// Only start server if not in Vercel serverless environment
+if (process.env.VERCEL !== '1') {
+  server.listen(PORT, BIND_HOST, async () => {
+    // List non-internal, non-loopback IPv4 addresses for convenience when binding to 0.0.0.0
+    const os = require('os');
+    const nets = os.networkInterfaces();
+    const addrs = [];
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]) {
+        if (net.family === 'IPv4' && !net.internal && !net.address.startsWith('127.')) {
+          addrs.push(net.address);
+        }
       }
     }
+
+    // Always show the public host as the primary URL so logs do not expose loopback addresses
+    console.log(`Server running at http://${PUBLIC_HOST}:${PORT}`);
+
+    // Additionally list local interface addresses when binding to all interfaces (0.0.0.0)
+    if (BIND_HOST === '0.0.0.0' && addrs.length > 0) {
+      console.log(`Also accessible via: ${addrs.map(a => `http://${a}:${PORT}`).join(', ')}`);
+    }
+
+    console.log(`WebSocket server running at ws://${PUBLIC_HOST}:${PORT}`);
+    
+    // Auto-sync stopwords on server start
+    console.log('🔄 Starting stopwords auto-sync...');
+    try {
+      await syncStopwords(pool);
+    } catch (err) {
+      console.error('⚠️  Stopwords auto-sync failed:', err.message);
+      // Continue server startup even if sync fails
+    }
+  });
+
+  // Graceful shutdown
+  function shutdown() {
+    stopTokenizerService();
+    process.exit(0);
   }
 
-  // Always show the public host as the primary URL so logs do not expose loopback addresses
-  console.log(`Server running at http://${PUBLIC_HOST}:${PORT}`);
-
-  // Additionally list local interface addresses when binding to all interfaces (0.0.0.0)
-  if (BIND_HOST === '0.0.0.0' && addrs.length > 0) {
-    console.log(`Also accessible via: ${addrs.map(a => `http://${a}:${PORT}`).join(', ')}`);
-  }
-
-  console.log(`WebSocket server running at ws://${PUBLIC_HOST}:${PORT}`);
-  
-  // Auto-sync stopwords on server start
-  console.log('🔄 Starting stopwords auto-sync...');
-  try {
-    await syncStopwords(pool);
-  } catch (err) {
-    console.error('⚠️  Stopwords auto-sync failed:', err.message);
-    // Continue server startup even if sync fails
-  }
-});
-
-// Graceful shutdown
-function shutdown() {
-  stopTokenizerService();
-  process.exit(0);
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
 
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-
-// เพิ่มบรรทัดนี้ไว้ท้ายสุดของไฟล์
+// Export for Vercel serverless
 module.exports = app;
