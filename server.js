@@ -359,7 +359,7 @@ if (fs.existsSync(FRONTEND_DIR)) {
   // Use a generic middleware instead of a path pattern to avoid path-to-regexp issues
   app.use((req, res, next) => {
     if (req.method !== 'GET') return next();
-    const skipPrefixes = ['/api', '/uploads', '/js', '/ranking', '/system', '/categories', '/getcategories', '/chat', '/login', '/forgotpassword', '/setnewpassword', '/validateresettoken', '/questionsanswers', '/getQuestionsAnswers', '/stopwords', '/synonyms', '/negativekeywords', '/adminusers', '/admin', '/officers', '/organizations', '/ai-image', '/health', '/keywords', '/autocomplete', '/getChatLogHasAnswers', '/getChatLogNoAnswers', '/getChatLogNoAnswers', '/feedbacks', '/debug', '/debug/feedbacks'];
+    const skipPrefixes = ['/api', '/uploads', '/js', '/ranking', '/system', '/categories', '/getcategories', '/chat', '/login', '/forgotpassword', '/setnewpassword', '/validateresettoken', '/questionsanswers', '/getQuestionsAnswers', '/stopwords', '/synonyms', '/negativekeywords', '/adminusers', '/admin', '/officers', '/organizations', '/ai-image', '/health', '/keywords', '/autocomplete', '/getChatLogHasAnswers', '/getChatLogNoAnswers', '/getChatLogNoAnswers', '/feedbacks', '/debug', '/debug/feedbacks', '/auth'];
     // Debug: log the requested path and whether it will be skipped
     for (const p of skipPrefixes) {
       if (req.path.startsWith(p)) {
@@ -381,6 +381,10 @@ app.get('/', (req, res) => {
 });
 
 // Thai patterns routes removed
+
+// --- Google OAuth Routes (Public) ---
+const googleAuthRoutes = require('./routes/googleAuth');
+app.use('/auth', googleAuthRoutes);
 
 // --- Public Routes (No Authentication Required) ---
 app.post('/login', loginService(pool, transporter));
