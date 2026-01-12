@@ -25,17 +25,24 @@ function getGoogleClient() {
 
 /**
  * สร้าง URL สำหรับ Login ด้วย Google
+ * @param {string} state - Optional state parameter (e.g., JWT token for linking)
  */
-function getGoogleAuthUrl() {
+function getGoogleAuthUrl(state = null) {
   const client = getGoogleClient();
-  return client.generateAuthUrl({
+  const authUrlOptions = {
     access_type: 'offline',
     scope: [
       'https://www.googleapis.com/auth/userinfo.profile',
       'https://www.googleapis.com/auth/userinfo.email'
     ],
     prompt: 'select_account'
-  });
+  };
+  
+  if (state) {
+    authUrlOptions.state = state;
+  }
+  
+  return client.generateAuthUrl(authUrlOptions);
 }
 
 /**

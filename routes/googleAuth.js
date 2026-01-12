@@ -38,10 +38,12 @@ router.get('/google', (req, res) => {
 /**
  * GET /auth/google/url
  * ดึง URL สำหรับ Login ด้วย Google (สำหรับ Frontend ที่ต้องการเปิดเองใน Popup)
+ * Query params: state (optional) - สำหรับผู้ใช้ที่ล็อกอินแล้วต้องการผูกบัญชี
  */
 router.get('/google/url', (req, res) => {
   try {
-    const url = googleOAuthService.getGoogleAuthUrl();
+    const { state } = req.query;
+    const url = googleOAuthService.getGoogleAuthUrl(state || null);
     res.json({ success: true, url });
   } catch (error) {
     console.error('Error generating Google Auth URL:', error);
@@ -58,7 +60,7 @@ router.get('/google/url', (req, res) => {
  */
 router.get('/google/callback', async (req, res) => {
   const pool = req.pool;
-  const { code, error: googleError } = req.query;
+  const { code, error: googleError, state } = req.query;
 
   if (googleError) {
     console.error('Google OAuth Error:', googleError);
@@ -80,6 +82,34 @@ router.get('/google/callback', async (req, res) => {
     const googleOAuth = await googleOAuthService.findGoogleOAuthByGoogleId(pool, googleUser.googleId);
 
     const frontendCallback = process.env.GOOGLE_OAUTH_FRONTEND_CALLBACK || 'http://localhost:5173/auth/google/callback';
+
+    // ถ้ามี state (JWT token) แสดงว่าผู้ใช้ล็อกอินแล้วต้องการผูกบัญชี
+    if (state && !googleOAuth) {
+      try {
+        // ตรวจสอบและถอดรหัส JWT token จาก state
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(state, process.env.JWT_SECRET);
+        
+        // ผูกบัญชี Google กับผู้ใช้ที่ล็อกอินอยู่
+        const userId = decoded.userId || decoded.id;
+        const userType = decoded.usertype;
+        
+        if (userType === 'Admin' || userType === 'Super Admin') {
+          await googleOAuthService.linkGoogleToAdmin(pool, googleUser, userId);
+        } else if (userType === 'Officer') {
+          await googleOAuthService.linkGoogleToOfficer(pool, googleUser, userId);
+        } else {
+          throw new Error('ประเภทผู้ใช้ไม่ถูกต้อง');
+        }
+        
+        // Redirect กลับไปหน้าจัดการบัญชีพร้อมข้อความสำเร็จ
+        return res.redirect(`http://project.3bbddns.com:36144/managegoogleaccount?linked=success`);
+        
+      } catch (err) {
+        console.error('Error linking with state:', err);
+        return res.redirect(`${frontendCallback}?error=${encodeURIComponent('ไม่สามารถผูกบัญชีได้: ' + err.message)}`);
+      }
+    }
 
     if (!googleOAuth) {
       // ยังไม่ได้ผูกบัญชี - ส่งข้อมูล Google กลับไปเพื่อให้ Frontend แสดงหน้าผูกบัญชี
