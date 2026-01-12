@@ -62,12 +62,13 @@ const getQuestionsAnswersService = (pool) => async (req, res) => {
                     );
                     dbg('✅ Found', keywords.length, 'keywords for question', question.QuestionsAnswersID);
                     
-                    // Get like/unlike counts for this question
+                    // Get like/unlike/pending counts for this question
                     dbg('🔍 Fetching feedback counts for question:', question.QuestionsAnswersID);
                     const [feedbackCounts] = await connection.query(
                         `SELECT 
                             SUM(CASE WHEN f.FeedbackValue = 1 THEN 1 ELSE 0 END) as likeCount,
-                            SUM(CASE WHEN f.FeedbackValue = 0 AND f.HandledAt IS NULL THEN 1 ELSE 0 END) as unlikeCount
+                            SUM(CASE WHEN f.FeedbackValue = 0 AND f.HandledAt IS NULL THEN 1 ELSE 0 END) as unlikeCount,
+                            SUM(CASE WHEN f.FeedbackValue = 2 THEN 1 ELSE 0 END) as pendingCount
                          FROM Feedbacks f
                          INNER JOIN ChatLogHasAnswers c ON f.ChatLogID = c.ChatLogID
                          WHERE c.QuestionsAnswersID = ?`,
@@ -76,13 +77,15 @@ const getQuestionsAnswersService = (pool) => async (req, res) => {
                     
                     const likeCount = feedbackCounts[0]?.likeCount || 0;
                     const unlikeCount = feedbackCounts[0]?.unlikeCount || 0;
-                    dbg('✅ Found', likeCount, 'likes and', unlikeCount, 'unlikes for question', question.QuestionsAnswersID);
+                    const pendingCount = feedbackCounts[0]?.pendingCount || 0;
+                    dbg('✅ Found', likeCount, 'likes,', unlikeCount, 'unlikes, and', pendingCount, 'pending for question', question.QuestionsAnswersID);
                     
                     return {
                         ...question,
                         keywords: keywords || [],
                         likeCount: likeCount,
-                        unlikeCount: unlikeCount
+                        unlikeCount: unlikeCount,
+                        pendingCount: pendingCount
                     };
                 } catch (keywordError) {
                     console.error('⚠️ Error fetching keywords/feedback for question', question.QuestionsAnswersID, ':', keywordError && (keywordError.message || keywordError));
@@ -91,7 +94,8 @@ const getQuestionsAnswersService = (pool) => async (req, res) => {
                         ...question,
                         keywords: [],
                         likeCount: 0,
-                        unlikeCount: 0
+                        unlikeCount: 0,
+                        pendingCount: 0
                     };
                 }
             })

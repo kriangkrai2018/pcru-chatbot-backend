@@ -36,6 +36,19 @@ module.exports = (pool) => async (req, res) => {
 
     console.log('✅ ChatLogHasAnswers created with ID:', result.insertId, 'for QA:', answersId);
 
+    // 🆕 Auto-create pending feedback (value = 2) for this chat log
+    // User can update it to like (1) or unlike (0) later
+    try {
+      await pool.query(
+        `INSERT INTO Feedbacks (FeedbackValue, ChatLogID, Timestamp)
+         VALUES (2, ?, NOW())`,
+        [result.insertId]
+      );
+      console.log('📝 Pending feedback (value=2) created for ChatLogID:', result.insertId);
+    } catch (feedbackErr) {
+      console.warn('⚠️ Could not create pending feedback:', feedbackErr && feedbackErr.message);
+    }
+
     if (notifyChatLogsUpdate) {
       notifyChatLogsUpdate({
         action: 'created',
