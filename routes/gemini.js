@@ -193,8 +193,31 @@ router.post('/autocomplete', async (req, res) => {
     }
 
     const userText = text.trim();
-    const maxTokens = parseInt(process.env.AUTOCOMPLETE_MAX_TOKENS) || 5;
-    const backendTimeout = parseInt(process.env.AUTOCOMPLETE_BACKEND_TIMEOUT_MS) || 4000;
+    
+    // Load quick suggestions from env (ไม่ hardcode)
+    let quickSuggestions = {};
+    try {
+      const suggestionsJson = process.env.AUTOCOMPLETE_QUICK_SUGGESTIONS;
+      if (suggestionsJson) {
+        quickSuggestions = JSON.parse(suggestionsJson);
+      }
+    } catch (e) {
+      console.warn('⚠️ Failed to parse AUTOCOMPLETE_QUICK_SUGGESTIONS from .env');
+    }
+
+    // Check for quick match (fast path)
+    for (const [key, value] of Object.entries(quickSuggestions)) {
+      if (userText.toLowerCase().startsWith(key.toLowerCase())) {
+        return res.json({
+          success: true,
+          suggestion: value,
+        });
+      }
+    }
+
+    // Fallback to Gemini for other queries
+    const maxTokens = parseInt(process.env.AUTOCOMPLETE_MAX_TOKENS) || 1;
+    const backendTimeout = parseInt(process.env.AUTOCOMPLETE_BACKEND_TIMEOUT_MS) || 1500;
     
     const prompt = `เติมคำถัดไป (เพียง 1 คำเท่านั้น):
 "${userText}"
