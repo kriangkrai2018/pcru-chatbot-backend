@@ -6,6 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const geminiService = require('../services/gemini');
+const geminiIntegration = require('../services/chat/geminiIntegration');
 
 /**
  * POST /api/gemini/chat
@@ -108,6 +109,67 @@ ${context ? `บริบท: ${context}` : ''}
     }
   } catch (error) {
     console.error('❌ Gemini Enhance Route Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/gemini/conversation
+ * สนทนาต่อเนื่องด้วย AI (แบบ conversation history)
+ */
+router.post('/conversation', async (req, res) => {
+  try {
+    const { message, sessionId, context } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุข้อความ (message)',
+      });
+    }
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'กรุณาระบุ sessionId',
+      });
+    }
+
+    const result = await geminiIntegration.continueConversation(
+      sessionId,
+      message,
+      context || {}
+    );
+
+    if (result.success) {
+      return res.json(result);
+    } else {
+      return res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('❌ Gemini Conversation Route Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * DELETE /api/gemini/conversation/:sessionId
+ * ลบประวัติสนทนา
+ */
+router.delete('/conversation/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const result = geminiIntegration.clearConversation(sessionId);
+    return res.json(result);
+  } catch (error) {
+    console.error('❌ Clear Conversation Error:', error);
     return res.status(500).json({
       success: false,
       error: error.message,

@@ -1,9 +1,12 @@
 /**
  * Gemini AI Integration Module
  * สำหรับ integrate Gemini AI เข้ากับระบบ chat respond ของ PCRU
+ * 
+ * รองรับ conversation history สำหรับสนทนาต่อเนื่อง
  */
 
 const geminiService = require('../gemini');
+const chatHistoryStore = require('./chatHistoryStore');
 
 /**
  * ใช้ Gemini AI ตอบคำถามเมื่อไม่มีคำตอบจากระบบเดิม
@@ -113,8 +116,127 @@ async function refineAnswer(answer) {
   }
 }
 
+/**
+ * สร้าง Chat Session สำหรับสนทนาต่อเนื่อง
+ * @param {string} sessionId - Session ID (user ID หรือ session ID)
+ * @param {string} firstMessage - ข้อความแรก
+ * @param {Object} context - บริบทเพิ่มเติม
+ * @returns {Promise<Object>} - ผลลัพธ์
+ */
+async function startChatSession(sessionId, firstMessage, context = {}) {
+  try {
+    // เพิ่มข้อความแรกลง history
+    chatHistoryStore.addMessageToHistory(sessionId, 'user', firstMessage);
+
+    // สร้าง prompt ด้วย context
+    let prompt = firstMessage;
+    if (context.category) {
+      prompt = `[หมวดหมู่: ${context.category}]\n${firstMessage}`;
+    }
+
+    const result = await geminiService.chat(prompt);
+
+    if (result.success) {
+      // เพิ่มคำตอบลง history
+      chatHistoryStore.addMessageToHistory(sessionId, 'assistant', result.message);
+
+      return {
+        success: true,
+        message: result.message,
+        sessionId: sessionId,
+        history: chatHistoryStore.getHistory(sessionId),
+      };
+    }
+
+    return {
+      success: false,
+      error: result.error,
+    };
+  } catch (error) {
+    console.error('❌ Gemini Chat Session Error:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * ส่งข้อความในสนทนาต่อเนื่อง
+ * @param {string} sessionId - Session ID
+ * @param {string} message - ข้อความใหม่
+ * @param {Object} context - บริบทเพิ่มเติม
+ * @returns {Promise<Object>} - ผลลัพธ์
+ */
+async function continueConversation(sessionId, message, context = {}) {
+  try {
+    // เพิ่มข้อความใหม่ลง history
+    chatHistoryStore.addMessageToHistory(sessionId, 'user', message);
+
+    // ดึง history ทั้งหมด
+    const history = chatHistoryStore.getHistory(sessionId);
+
+    // สร้าง context string จาก history
+    let historyContext = '';
+    if (history.length > 1) {
+      // แสดง 2-3 ข้อความก่อนหน้า
+      const recentHistory = history.slice(Math.max(0, history.length - 6));
+      historyContext = '**ประวัติการสนทนา:**\n';
+      for (const msg of recentHistory) {
+        const role = msg.role === 'user' ? 'ผู้ใช้' : 'ตัวช่วย';
+        historyContext += `${role}: ${msg.content}\n`;
+      }
+      historyContext += '\n';
+    }
+
+    // สร้าง prompt พร้อม context
+    let prompt = historyContext + `**คำถามใหม่:** ${message}`;
+    if (context.category) {
+      prompt = `[หมวดหมู่: ${context.category}]\n${prompt}`;
+    }
+
+    const result = await geminiService.chat(prompt);
+
+    if (result.success) {
+      // เพิ่มคำตอบลง history
+      chatHistoryStore.addMessageToHistory(sessionId, 'assistant', result.message);
+
+      return {
+        success: true,
+        message: result.message,
+        sessionId: sessionId,
+        history: chatHistoryStore.getHistory(sessionId),
+        messageCount: chatHistoryStore.getHistory(sessionId).length,
+      };
+    }
+
+    return {
+      success: false,
+      error: result.error,
+    };
+  } catch (error) {
+    console.error('❌ Gemini Continue Conversation Error:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * ลบประวัติสนทนา
+ * @param {string} sessionId - Session ID
+ */
+function clearConversation(sessionId) {
+  chatHistoryStore.clearHistory(sessionId);
+  return { success: true, message: 'Conversation cleared' };
+}
+
 module.exports = {
   getAIResponse,
   enhanceAnswer,
   refineAnswer,
+  startChatSession,
+  continueConversation,
+  clearConversation,
 };
