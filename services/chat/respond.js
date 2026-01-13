@@ -834,39 +834,47 @@ module.exports = (pool) => async (req, res) => {
 
     // 7. Final Response (Success or Fallback)
     if (finalResults.length === 0) {
-        // 🔥 ใช้ Gemini AI ตอบแทนเมื่อไม่มีคำตอบจากระบบเดิม
-        console.log('📢 ไม่พบคำตอบ ลองใช้ Gemini AI ด้วย Conversation...');
+        // � เช็คโหมด: ถ้าไม่ใช่ AI Mode ห้ามเรียก Gemini เด็ดขาด
+        const useGemini = req.body.useGemini === true || req.body.useGemini === 'true';
         
-        // สร้าง sessionId จาก user session หรือ IP
-        const sessionId = req.sessionID || req.ip || 'anonymous-' + Date.now();
-        
-        const aiResponse = await geminiIntegration.continueConversation(
-            sessionId,
-            message,
-            { category: 'general' }
-        );
+        if (useGemini) {
+            // 🔥 โหมด AI: ใช้ Gemini AI ตอบแทนเมื่อไม่มีคำตอบจากระบบเดิม
+            console.log('📢 [AI MODE] ไม่พบคำตอบ ลองใช้ Gemini AI ด้วย Conversation...');
+            
+            // สร้าง sessionId จาก user session หรือ IP
+            const sessionId = req.sessionID || req.ip || 'anonymous-' + Date.now();
+            
+            const aiResponse = await geminiIntegration.continueConversation(
+                sessionId,
+                message,
+                { category: 'general' }
+            );
 
-        if (aiResponse.success) {
-            console.log('✅ AI ตอบสำเร็จ (Conversation Mode)');
-            return res.status(200).json({
-                success: true,
-                found: true,
-                aiGenerated: true,
-                source: 'ai-conversation',
-                sessionId: sessionId,
-                message: aiResponse.message,
-                alternatives: [{
-                    id: 'ai-generated',
-                    title: 'ตอบจาก AI Assistant',
-                    preview: aiResponse.message.slice(0, 200),
-                    text: aiResponse.message,
-                    score: '1.00',
+            if (aiResponse.success) {
+                console.log('✅ AI ตอบสำเร็จ (Conversation Mode)');
+                return res.status(200).json({
+                    success: true,
+                    found: true,
                     aiGenerated: true,
-                }],
-            });
+                    source: 'ai-conversation',
+                    sessionId: sessionId,
+                    message: aiResponse.message,
+                    alternatives: [{
+                        id: 'ai-generated',
+                        title: 'ตอบจาก AI Assistant',
+                        preview: aiResponse.message.slice(0, 200),
+                        text: aiResponse.message,
+                        score: '1.00',
+                        aiGenerated: true,
+                    }],
+                });
+            }
+        } else {
+            // 🔍 โหมด Keyword: ห้ามเรียก Gemini - แสดง contact เท่านั้น
+            console.log('📢 [KEYWORD MODE] ไม่พบคำตอบ - ส่ง contact กลับ (ไม่เรียก Gemini)');
         }
 
-        // ถ้า AI error ด้วย ให้ส่งข้อมูลติดต่อแทน
+        // ถ้า AI error หรือโหมด Keyword ให้ส่งข้อมูลติดต่อแทน
         const { getDefaultContacts } = require('../../utils/getDefaultContact_fixed');
         try {
             const contacts = await getDefaultContacts(connection);

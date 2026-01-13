@@ -220,12 +220,15 @@ ${prompt}
     const result = await geminiService.chat(prompt, { maxTokens, timeout });
 
     if (result.success) {
+      console.log(`🤖 Gemini Response (continueConversation):`, result.message);
+      
       // เพิ่มคำตอบลง history
       chatHistoryStore.addMessageToHistory(sessionId, 'assistant', result.message);
 
       return {
         success: true,
         message: result.message,
+        response: result.message, // เพิ่ม response field
         sessionId: sessionId,
         history: chatHistoryStore.getHistory(sessionId),
         messageCount: chatHistoryStore.getHistory(sessionId).length,
