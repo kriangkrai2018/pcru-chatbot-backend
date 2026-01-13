@@ -12,12 +12,12 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
 const MOCK_MODE = process.env.GEMINI_MOCK_MODE === 'true';
 
 // Default model configuration
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 const DEFAULT_GENERATION_CONFIG = {
-  temperature: 0.7,
-  topP: 0.95,
-  topK: 40,
-  maxOutputTokens: 1024,
+  temperature: parseFloat(process.env.GEMINI_TEMPERATURE) || 0.7,
+  topP: parseFloat(process.env.GEMINI_TOP_P) || 0.95,
+  topK: parseInt(process.env.GEMINI_TOP_K) || 40,
+  maxOutputTokens: parseInt(process.env.GEMINI_MAX_OUTPUT_TOKENS) || 1024,
 };
 
 // System instruction สำหรับ PCRU Chatbot (อ่านจาก .env)
@@ -35,6 +35,8 @@ function createModel(options = {}) {
     systemInstruction = PCRU_SYSTEM_INSTRUCTION,
     generationConfig = DEFAULT_GENERATION_CONFIG,
   } = options;
+
+  console.log(`🤖 Creating Gemini Model: ${model}`);
 
   return genAI.getGenerativeModel({
     model,
