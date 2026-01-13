@@ -161,6 +161,8 @@ const { syncStopwords } = require('./scripts/sync_stopwords_from_standard');
 // Ranking route
 const rankingRoute = require('./routes/ranking');
 const geocodeService = require('./services/geo/geocode');
+// Gemini AI route
+const geminiRoute = require('./routes/gemini');
 
 const upload = multer({ dest: 'uploads/' }); // Multer config
 
@@ -847,6 +849,9 @@ app.post('/chat/logs/no-answer', chatLogNoAnswerService(pool));
 
 // Ranking API (public)
 app.use('/ranking', rankingRoute);
+
+// Gemini AI API (public)
+app.use('/api/gemini', geminiRoute);
 
 // --- System Information Route (public) ---
 const systemRoute = require('./routes/system');

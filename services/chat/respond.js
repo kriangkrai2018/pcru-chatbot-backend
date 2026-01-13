@@ -1,5 +1,6 @@
 const { getStopwordsSet } = require('../stopwords/loadStopwords');
 const NEG_KW_MODULE = require('../negativeKeywords/loadNegativeKeywords');
+const geminiIntegration = require('./geminiIntegration');
 
 // Extract functions safely to avoid errors if module structure differs
 const simpleTokenize = NEG_KW_MODULE.simpleTokenize || ((t) => String(t || '').toLowerCase().split(/\s+/));
@@ -833,12 +834,49 @@ module.exports = (pool) => async (req, res) => {
 
     // 7. Final Response (Success or Fallback)
     if (finalResults.length === 0) {
+        // 🔥 ใช้ Gemini AI ตอบแทนเมื่อไม่มีคำตอบจากระบบเดิม
+        console.log('📢 ไม่พบคำตอบ ลองใช้ Gemini AI...');
+        
+        const aiResponse = await geminiIntegration.getAIResponse(message, {
+            category: 'general',
+        });
+
+        if (aiResponse.success) {
+            console.log('✅ AI ตอบสำเร็จ');
+            return res.status(200).json({
+                success: true,
+                found: true,
+                aiGenerated: true,
+                source: 'ai',
+                message: aiResponse.answer,
+                alternatives: [{
+                    id: 'ai-generated',
+                    title: 'ตอบจาก AI Assistant',
+                    preview: aiResponse.answer.slice(0, 200),
+                    text: aiResponse.answer,
+                    score: '1.00',
+                    aiGenerated: true,
+                }],
+            });
+        }
+
+        // ถ้า AI error ด้วย ให้ส่งข้อมูลติดต่อแทน
         const { getDefaultContacts } = require('../../utils/getDefaultContact_fixed');
         try {
             const contacts = await getDefaultContacts(connection);
-            return res.status(200).json({ success: true, found: false, message: `ไม่พบข้อมูลที่ตรงกัน`, contacts: contacts });
+            return res.status(200).json({ 
+                success: true, 
+                found: false, 
+                message: `ไม่พบข้อมูลที่ตรงกัน`, 
+                contacts: contacts 
+            });
         } catch (e) {
-            return res.status(200).json({ success: true, found: false, message: `ไม่พบข้อมูลที่ตรงกัน`, contacts: [] });
+            return res.status(200).json({ 
+                success: true, 
+                found: false, 
+                message: `ไม่พบข้อมูลที่ตรงกัน`, 
+                contacts: [] 
+            });
         }
     }
 
@@ -848,6 +886,40 @@ module.exports = (pool) => async (req, res) => {
     const limit = parseInt(req.body.limit) || 30; // เพิ่ม Default เป็น 30 รายการ เพื่อให้แสดงผลเยอะขึ้น (หรือปรับเป็น 10 ก็ได้)
     
     const topRanked = finalResults.slice(offset, offset + limit);
+
+    // 🔥 ปรับปรุงคำตอบแรกด้วย Gemini AI (Enhance Mode)
+    let enhancedAlternatives = topRanked.map(r => ({
+        id: r.item.QuestionsAnswersID,
+        title: r.item.QuestionTitle,
+        preview: (r.item.QuestionText || '').slice(0, 200),
+        text: r.item.QuestionText,
+        score: r.score.toFixed(2),
+        keywords: r.item.keywords,
+        categories: r.item.CategoriesID || null,
+        categoriesPDF: r.item.CategoriesPDF || null,
+        keywordMatch: r.components && r.components.overlapCount > 0
+    }));
+
+    // ปรับปรุงคำตอบแรกเพื่อให้ดูธรรมชาติมากขึ้น
+    if (topRanked.length > 0 && topRanked[0].item.QuestionText) {
+        try {
+            const firstAnswer = topRanked[0].item;
+            const enhanced = await geminiIntegration.enhanceAnswer(
+                message,
+                firstAnswer.QuestionText,
+                { category: firstAnswer.CategoriesID || 'general' }
+            );
+
+            if (enhanced.success) {
+                console.log('✨ ปรับปรุงคำตอบด้วย AI สำเร็จ');
+                enhancedAlternatives[0].text = enhanced.answer;
+                enhancedAlternatives[0].enhanced = true;
+            }
+        } catch (aiError) {
+            console.warn('⚠️ ไม่สามารถปรับปรุงคำตอบด้วย AI:', aiError.message);
+            // ใช้คำตอบเดิมต่อ ไม่ error
+        }
+    }
     
     // 🆕 8. Contact Fetching Logic (Hide if 1 answer, Show if >1)
     let specificContacts = [];
@@ -890,7 +962,7 @@ module.exports = (pool) => async (req, res) => {
       query: message,
       message: msgText,
       contacts: specificContacts,
-      alternatives: topRanked.map(r => ({ id: r.item.QuestionsAnswersID, title: r.item.QuestionTitle, preview: (r.item.QuestionText || '').slice(0, 200), text: r.item.QuestionText, score: r.score.toFixed(2), keywords: r.item.keywords, categories: r.item.CategoriesID || null, categoriesPDF: r.item.CategoriesPDF || null, keywordMatch: r.components && r.components.overlapCount > 0 }))
+      alternatives: enhancedAlternatives
     });
   } catch (err) {
     console.error('API Error:', err);

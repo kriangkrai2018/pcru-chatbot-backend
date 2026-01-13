@@ -24,7 +24,9 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "async-mutex": "^0.5.0",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
