@@ -878,17 +878,23 @@ module.exports = (pool) => async (req, res) => {
         const { getDefaultContacts } = require('../../utils/getDefaultContact_fixed');
         try {
             const contacts = await getDefaultContacts(connection);
+            console.log(`📧 Sending ${contacts.length} default contacts as fallback`);
             return res.status(200).json({ 
                 success: true, 
                 found: false, 
-                message: `ไม่พบข้อมูลที่ตรงกัน`, 
+                message: `ไม่พบข้อมูลที่ตรงกับคำค้นหา`, 
+                answer: `ไม่พบข้อมูลที่ตรงกับคำค้นหา`,
+                text: `ไม่พบข้อมูลที่ตรงกับคำค้นหา`,
                 contacts: contacts 
             });
         } catch (e) {
+            console.error('❌ Failed to load default contacts:', e.message);
             return res.status(200).json({ 
                 success: true, 
                 found: false, 
-                message: `ไม่พบข้อมูลที่ตรงกัน`, 
+                message: `ไม่พบข้อมูลที่ตรงกับคำค้นหา`, 
+                answer: `ไม่พบข้อมูลที่ตรงกับคำค้นหา`,
+                text: `ไม่พบข้อมูลที่ตรงกับคำค้นหา`,
                 contacts: [] 
             });
         }

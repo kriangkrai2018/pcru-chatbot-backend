@@ -34,15 +34,26 @@ function createModel(options = {}) {
     model = DEFAULT_MODEL,
     systemInstruction = PCRU_SYSTEM_INSTRUCTION,
     generationConfig = DEFAULT_GENERATION_CONFIG,
+    useSearchGrounding = true,
   } = options;
 
   console.log(`🤖 Creating Gemini Model: ${model}`);
+  console.log(`🔍 Google Search Grounding: ${useSearchGrounding ? 'Enabled' : 'Disabled'}`);
 
-  return genAI.getGenerativeModel({
+  const modelConfig = {
     model,
     systemInstruction,
     generationConfig,
-  });
+  };
+
+  // Enable Google Search Grounding for real-time web search
+  if (useSearchGrounding) {
+    modelConfig.tools = [{
+      googleSearch: {}
+    }];
+  }
+
+  return genAI.getGenerativeModel(modelConfig);
 }
 
 /**
