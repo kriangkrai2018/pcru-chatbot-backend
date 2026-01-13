@@ -193,12 +193,15 @@ router.post('/autocomplete', async (req, res) => {
     }
 
     const userText = text.trim();
+    const maxTokens = parseInt(process.env.AUTOCOMPLETE_MAX_TOKENS) || 5;
+    const backendTimeout = parseInt(process.env.AUTOCOMPLETE_BACKEND_TIMEOUT_MS) || 4000;
+    
     const prompt = `เติมคำถัดไป (เพียง 1 คำเท่านั้น):
 "${userText}"
 
 ตอบเฉพาะคำที่เติม ห้ามตอบเป็นประโยค`;
 
-    const result = await geminiService.chat(prompt, { maxTokens: 5, timeout: 4000 });
+    const result = await geminiService.chat(prompt, { maxTokens, timeout: backendTimeout });
 
     if (result.success && result.message) {
       // Clean up the response
