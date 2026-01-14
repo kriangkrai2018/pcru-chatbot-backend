@@ -55,12 +55,150 @@ async function googleSearchTopResult(query) {
     return { success: false };
   }
 }
+
+// --------------------------
+// Location Intent Helpers
+// --------------------------
+let cachedLocationKeywords = null;
+let cachedLocationKeywordsTs = 0;
+const LOCATION_KEYWORDS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function escapeRegexText(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Load location keywords from environment or AppSettings DB key 'LOCATION_QUERY_KEYWORDS'.
+ * Returns an array of keywords (strings). No hard-coded keywords here.
+ */
+async function getLocationKeywords(pool) {
+  // Use cached if recent
+  if (cachedLocationKeywords && (Date.now() - cachedLocationKeywordsTs) < LOCATION_KEYWORDS_CACHE_TTL_MS) {
+    return cachedLocationKeywords;
+  }
+
+  // 1) ENV var (comma-separated)
+  const envList = process.env.LOCATION_QUERY_KEYWORDS;
+  if (envList && envList.trim()) {
+    const arr = envList.split(',').map(s => s.trim()).filter(Boolean);
+    cachedLocationKeywords = arr;
+    cachedLocationKeywordsTs = Date.now();
+    console.log('📥 Loaded location keywords from ENV:', arr);
+    return cachedLocationKeywords;
+  }
+
+  // 2) Try reading from AppSettings table (if available)
+  if (pool) {
+    try {
+      const conn = await pool.getConnection();
+      try {
+        const [rows] = await conn.query("SELECT SettingValue FROM AppSettings WHERE SettingKey = 'LOCATION_QUERY_KEYWORDS' LIMIT 1");
+        if (rows && rows.length > 0 && rows[0].SettingValue) {
+          let val = rows[0].SettingValue;
+          // If it's JSON array, parse, else treat as CSV
+          try {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed)) {
+              cachedLocationKeywords = parsed.map(s => String(s).trim()).filter(Boolean);
+            }
+          } catch (e) {
+            cachedLocationKeywords = String(val).split(',').map(s => s.trim()).filter(Boolean);
+          }
+
+          if (cachedLocationKeywords.length) {
+            cachedLocationKeywordsTs = Date.now();
+            console.log('📥 Loaded location keywords from DB AppSettings:', cachedLocationKeywords);
+            return cachedLocationKeywords;
+          }
+        }
+      } finally {
+        conn.release();
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not read AppSettings for LOCATION_QUERY_KEYWORDS:', e.message);
+    }
+  }
+
+  // 3) No configured keywords — return empty list (do not hardcode fallback keywords)
+  console.warn('⚠️ No location keywords configured (set LOCATION_QUERY_KEYWORDS env or AppSettings entry).');
+  cachedLocationKeywords = [];
+  cachedLocationKeywordsTs = Date.now();
+  return cachedLocationKeywords;
+}
+
+/**
+ * Determine whether a message is a location/navigation query using configured keywords.
+ * Returns boolean.
+ */
+async function isLocationQueryMessage(message, pool) {
+  if (!message || !message.trim()) return false;
+  const keywords = await getLocationKeywords(pool);
+  if (keywords && keywords.length > 0) {
+    const pattern = '\\b(' + keywords.map(escapeRegexText).join('|') + ')\\b';
+    const re = new RegExp(pattern, 'i');
+    return re.test(message);
+  }
+  // If no configured keywords, fall back to coordinate or maps-link detection (no hard-coded keyword list)
+  if (/\d{1,3}\.\d{4,},\s*\d{1,3}\.\d{4,}/.test(message)) return true; // coordinates present
+  if (/maps\.app\.goo\.gl|maps\.google|google\.com\/maps|goo\.gl\/maps/i.test(message)) return true; // maps link
+  return false;
+}
 async function getContextFromDatabase(message, pool) {
+  // Helper to extract coordinates from text
+  function extractCoordsFromText(text) {
+    if (!text) return null;
+    // match lat,lng like 16.422083, 101.152533 or embedded in text
+    const m = /(-?\d{1,3}\.\d{4,})\s*,\s*(-?\d{1,3}\.\d{4,})/.exec(text);
+    if (m) {
+      const lat = parseFloat(m[1]);
+      const lng = parseFloat(m[2]);
+      // basic validation for Thailand bounds
+      if (lat >= 5 && lat <= 21 && lng >= 97 && lng <= 106) {
+        return { lat, lng };
+      }
+    }
+    return null;
+  }
+
   try {
     const connection = await pool.getConnection();
     try {
       console.log(`🔍 Searching database for: "${message}"`);
-      
+
+      // If the message looks like a location/navigation question (driven by configuration), prefer navigation entries first
+      const isLocationQuery = await isLocationQueryMessage(message, connection);
+      if (isLocationQuery) {
+        console.log('🔎 Location query detected (via configured keywords or map/coords) - running navigation-focused search');
+        const [navResults] = await connection.query(`
+          SELECT QuestionsAnswersID, QuestionTitle, QuestionText
+          FROM QuestionsAnswers
+          WHERE (QuestionTitle LIKE '%พิกัด%' OR QuestionTitle LIKE '%นำทาง%' OR QuestionTitle LIKE '%ที่ตั้ง%' OR QuestionTitle LIKE '%แผนที่%' OR QuestionTitle LIKE '%ตึก%' OR QuestionTitle LIKE '%อาคาร%')
+            AND (
+              QuestionText LIKE '%maps.app.goo.gl%'
+              OR QuestionText LIKE '%maps.google%'
+              OR QuestionText LIKE '%goo.gl/maps%'
+              OR QuestionText LIKE '%google.com/maps%'
+              OR QuestionText REGEXP '[0-9]+\\.[0-9]+,[[:space:]]*[0-9]+\\.[0-9]+'
+            )
+          ORDER BY QuestionsAnswersID DESC
+          LIMIT 1
+        `);
+
+        if (navResults && navResults.length > 0) {
+          const r = navResults[0];
+          const coords = extractCoordsFromText(r.QuestionText) || extractCoordsFromText(r.QuestionTitle);
+          return {
+            found: true,
+            title: r.QuestionTitle || '',
+            answer: r.QuestionText || '',
+            keywords: '',
+            lat: coords ? coords.lat : null,
+            lng: coords ? coords.lng : null
+          };
+        }
+        // If nav search fails, continue to regular strategies below
+      }
+
       // Strategy 1: Search keywords directly (best for Thai content)
       let [results] = await connection.query(`
         SELECT qa.QuestionsAnswersID, qa.QuestionTitle, qa.QuestionText,
@@ -78,11 +216,14 @@ async function getContextFromDatabase(message, pool) {
       if (results && results.length > 0) {
         console.log(`✅ Strategy 1 (keyword match) found: "${results[0].QuestionTitle}"`);
         const topResult = results[0];
+        const coords = extractCoordsFromText(topResult.QuestionText) || extractCoordsFromText(topResult.QuestionTitle);
         return {
           found: true,
           title: topResult.QuestionTitle || '',
           answer: topResult.QuestionText || '',
-          keywords: topResult.keywords || ''
+          keywords: topResult.keywords || '',
+          lat: coords ? coords.lat : null,
+          lng: coords ? coords.lng : null
         };
       }
 
@@ -109,11 +250,14 @@ async function getContextFromDatabase(message, pool) {
           if (wordResults && wordResults.length > 0) {
             console.log(`✅ Strategy 2 (word "${word}") found: "${wordResults[0].QuestionTitle}"`);
             const topResult = wordResults[0];
+            const coords = extractCoordsFromText(topResult.QuestionText) || extractCoordsFromText(topResult.QuestionTitle);
             return {
               found: true,
               title: topResult.QuestionTitle || '',
               answer: topResult.QuestionText || '',
-              keywords: topResult.keywords || ''
+              keywords: topResult.keywords || '',
+              lat: coords ? coords.lat : null,
+              lng: coords ? coords.lng : null
             };
           }
         }
@@ -135,11 +279,14 @@ async function getContextFromDatabase(message, pool) {
       if (results && results.length > 0) {
         console.log(`✅ Strategy 3 (title/text) found: "${results[0].QuestionTitle}"`);
         const topResult = results[0];
+        const coords = extractCoordsFromText(topResult.QuestionText) || extractCoordsFromText(topResult.QuestionTitle);
         return {
           found: true,
           title: topResult.QuestionTitle || '',
           answer: topResult.QuestionText || '',
-          keywords: topResult.keywords || ''
+          keywords: topResult.keywords || '',
+          lat: coords ? coords.lat : null,
+          lng: coords ? coords.lng : null
         };
       }
 
@@ -287,8 +434,83 @@ router.post('/conversation', async (req, res) => {
 
     // 🔍 Search database for relevant answers
     const dbContext = await getContextFromDatabase(message, req.pool);
-    
-    // Enhance context with database answer if found
+
+    // If DB has a direct answer, return it (prefer DB over free-form AI to avoid hallucination)
+    if (dbContext.found) {
+      console.log(`✅ Returning DB answer for "${message}" -> ${dbContext.title}`);
+      // Try to enhance for readability but keep DB as source of truth
+      try {
+        const enhanced = await geminiIntegration.enhanceAnswer(message, dbContext.answer, { category: context?.category });
+        let finalAnswer = (enhanced && enhanced.success) ? enhanced.answer : dbContext.answer;
+
+        // If DB contains coords, append them to the visible message (so frontend's linkifyText will render a map widget)
+        if (dbContext.lat && dbContext.lng) {
+          const coordLine = `\n\n📍 พิกัด: ${dbContext.lat}, ${dbContext.lng}`;
+          if (!/\d{1,3}\.\d{4,},\s*\d{1,3}\.\d{4,}/.test(finalAnswer)) {
+            finalAnswer = finalAnswer + coordLine;
+          }
+        }
+
+        // Build response payload
+        const payload = {
+          success: true,
+          message: finalAnswer,
+          source: 'database',
+          databaseTitle: dbContext.title,
+          databaseAnswer: dbContext.answer
+        };
+
+        // Attach coordinates/map if available
+        if (dbContext.lat && dbContext.lng) {
+          payload.databaseLat = dbContext.lat;
+          payload.databaseLng = dbContext.lng;
+          payload.databaseMapUrl = `https://www.google.com/maps?q=${dbContext.lat},${dbContext.lng}&output=embed`;
+        }
+
+        // Add contacts
+        try {
+          const { getDefaultContacts } = require('../utils/getDefaultContact_fixed');
+          payload.contacts = await getDefaultContacts(req.pool);
+        } catch (e) {
+          payload.contacts = [];
+        }
+
+        return res.json(payload);
+      } catch (e) {
+        console.warn('⚠️ Failed to enhance DB answer, returning raw DB answer:', e.message);
+        return res.json({
+          success: true,
+          message: dbContext.answer,
+          source: 'database',
+          databaseTitle: dbContext.title,
+          databaseAnswer: dbContext.answer,
+          contacts: []
+        });
+      }
+    }
+
+    // If DB misses, attempt Google fallback
+    const googleResult = await googleSearchTopResult(message);
+    if (googleResult && googleResult.success) {
+      console.log(`🔎 Google fallback found link for "${message}": ${googleResult.link}`);
+      const fallbackMsg = `ขอโทษค่ะ ไม่พบคำตอบในฐานข้อมูลของเรา ฉันพบบทความหรือแหล่งข้อมูลที่เกี่ยวข้อง: <a href="${googleResult.link}" target="_blank" rel="noopener noreferrer">ดูที่นี่</a>${googleResult.snippet ? (' — ' + googleResult.snippet) : ''}`;
+      let contacts = [];
+      try {
+        const { getDefaultContacts } = require('../utils/getDefaultContact_fixed');
+        contacts = await getDefaultContacts(req.pool);
+      } catch (e) {
+        console.warn('⚠️ Failed to load contacts:', e.message);
+      }
+      return res.json({
+        success: true,
+        message: fallbackMsg,
+        source: 'google-fallback',
+        googleLink: googleResult.link,
+        contacts: contacts || []
+      });
+    }
+
+    // Else, fall back to conversation via Gemini using database context if any
     let enhancedContext = context || {};
     if (dbContext.found) {
       enhancedContext.databaseAnswer = dbContext.answer;
