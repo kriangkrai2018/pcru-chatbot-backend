@@ -22,6 +22,39 @@ router.use((req, res, next) => {
  * Search database for matching answers
  * ค้นหาจากฐานข้อมูล เพื่อใช้เป็น context สำหรับ Gemini
  */
+const axios = require('axios');
+
+/**
+ * Simple Google search fallback: fetches Google search HTML and extracts first result URL and snippet.
+ * Note: scraping Google is brittle but acceptable as a pragmatic fallback. We set a UA header to avoid immediate blocking.
+ */
+async function googleSearchTopResult(query) {
+  try {
+    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=1&hl=th`;
+    const resp = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115 Safari/537.36'
+      },
+      timeout: 4000
+    });
+    const html = resp.data || '';
+
+    // Try to extract the first organic result URL
+    const urlMatch = /\/url\?q=([^&\"]+)/i.exec(html);
+    const snippetMatch = /<div class="BNeawe s3v9rd AP7Wnd">([\s\S]*?)<\/div>/i.exec(html);
+
+    if (urlMatch) {
+      const link = decodeURIComponent(urlMatch[1]);
+      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+      return { success: true, link, snippet };
+    }
+
+    return { success: false };
+  } catch (e) {
+    console.warn('⚠️ Google search fallback failed:', e.message);
+    return { success: false };
+  }
+}
 async function getContextFromDatabase(message, pool) {
   try {
     const connection = await pool.getConnection();
